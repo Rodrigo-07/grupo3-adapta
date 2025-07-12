@@ -1,0 +1,21 @@
+from fastapi import FastAPI
+from app.users import router as users_router
+from app.payments import router as payments_router
+from models.database import Base, engine
+
+async def create_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+app = FastAPI(
+    title="FastPay API",
+    version="0.1.0",
+    on_startup=[create_tables],
+)
+
+app.include_router(users_router, prefix="/users", tags=["Users"])
+app.include_router(payments_router, prefix="/payments", tags=["Payments"])
+
+@app.get("/")
+async def read_root():
+    return {"okss"}

@@ -1,1 +1,1 @@
-# grupo3-adapta
+# Hackathon-Adapta
