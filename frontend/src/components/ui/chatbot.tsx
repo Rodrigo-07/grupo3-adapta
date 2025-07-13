@@ -2,30 +2,24 @@
 
 import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, Brain, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronUp, Brain, MessageSquare, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+
+interface Message {
+  id: string;
+  role: "user" | "bot" | "system";
+  text: string;
+  reasoning?: string[];
+  insight?: any;
+  summary?: string;
+  showReasoning?: boolean;
+}
 
 /**
  * Chat widget with streamed reasoning and expandable thoughts.
- * - Shows user, assistant answer, summary and expandable LLM "thoughts" (reasoning)
- * - Uses structured events from backend streaming
- * - TailwindCSS with shadcn/ui components.
  */
 export default function Chatbot() {
-  /* ---------------------------------------------------------------- */
-  interface Message {
-    id: string;
-    role: "user" | "bot" | "system";
-    text: string;
-    reasoning?: string[];
-    insight?: any;
-    summary?: string;
-    showReasoning?: boolean;
-  }
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +30,6 @@ export default function Chatbot() {
   const [currentInsight, setCurrentInsight] = useState<any>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  /* ----------------------------- utils ----------------------------- */
   const scrollBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -44,65 +37,6 @@ export default function Chatbot() {
 
   const addMessage = (m: Message) => setMessages((p) => [...p, m]);
 
-  /* ---------------------------- streaming ---------------------------- */
-  const handleStreamEvent = (event: any) => {
-    switch (event.type) {
-      case 'start':
-        setCurrentReasoning([event.message || '']);
-        break;
-        
-      case 'reasoning_step':
-        setCurrentReasoning(prev => [...prev, event.message || '']);
-        break;
-        
-      case 'answer_chunk':
-        setCurrentAnswer(prev => prev + (event.chunk || ''));
-        break;
-        
-      case 'insight':
-        setCurrentInsight(event.data);
-        setCurrentReasoning(prev => [...prev, event.message || '']);
-        break;
-
-      case 'summary':
-        setCurrentSummary(event.summary || '');
-        break;
-        
-      case 'done':
-        // Finalizar e criar mensagem completa
-        if (currentAnswer || currentSummary) {
-          addMessage({
-            id: crypto.randomUUID(),
-            role: "bot",
-            text: currentAnswer,
-            reasoning: [...currentReasoning],
-            insight: currentInsight,
-            summary: currentSummary,
-            showReasoning: false
-          });
-        }
-        
-        // Reset states
-        setCurrentReasoning([]);
-        setCurrentAnswer("");
-        setCurrentSummary("");
-        setCurrentInsight(null);
-        setIsLoading(false);
-        break;
-        
-      case 'error':
-        console.error('Erro no streaming:', event.message);
-        addMessage({
-          id: crypto.randomUUID(),
-          role: "system",
-          text: `❌ ${event.message}`
-        });
-        setIsLoading(false);
-        break;
-    }
-  };
-
-  /* ----------------------------- send ------------------------------ */
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
     const text = input.trim();
@@ -111,7 +45,6 @@ export default function Chatbot() {
 
     try {
       setIsLoading(true);
-      // Limpar estado anterior
       setCurrentReasoning([]);
       setCurrentAnswer("");
       setCurrentSummary("");
@@ -131,7 +64,6 @@ export default function Chatbot() {
       
       const data = await res.json();
       
-      // Create complete message from response
       addMessage({
         id: crypto.randomUUID(),
         role: "bot",
@@ -171,14 +103,13 @@ export default function Chatbot() {
     );
   };
 
-  /* -------------------------- renderer ----------------------------- */
   const renderMessage = (message: Message) => {
     switch (message.role) {
       case "user":
         return (
           <div key={message.id} className="flex justify-end mb-4">
-            <div className="bg-blue-500 text-white p-3 rounded-lg max-w-xs">
-              {message.text}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-2xl rounded-br-md max-w-xs shadow-md">
+              <p className="text-sm leading-relaxed">{message.text}</p>
             </div>
           </div>
         );
@@ -186,30 +117,31 @@ export default function Chatbot() {
       case "bot":
         return (
           <div key={message.id} className="mb-6">
-            <Card className="max-w-md">
-              <CardContent className="p-4">
-                <div className="text-gray-800 whitespace-pre-wrap break-words mb-3">
+            <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md shadow-sm max-w-md overflow-hidden">
+              <div className="p-5">
+                <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
                   {message.text}
                 </div>
                 
                 {message.summary && (
-                  <div className="mb-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <div className="flex items-center gap-2 mb-2">
                       <MessageSquare className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-800">Resumo</span>
+                      <span className="text-sm font-semibold text-blue-800">Resumo</span>
                     </div>
-                    <p className="text-sm text-blue-700">{message.summary}</p>
+                    <p className="text-sm text-blue-700 leading-relaxed">{message.summary}</p>
                   </div>
                 )}
                 
                 {message.insight && (
-                  <div className="mb-3">
-                    <Badge variant="secondary" className="mr-2">
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-200 rounded-full px-3 py-1">
                       {message.insight.tema}
                     </Badge>
                     <Badge 
                       variant={message.insight.dificuldade === 'alto' ? 'destructive' : 
                               message.insight.dificuldade === 'medio' ? 'default' : 'secondary'}
+                      className="rounded-full px-3 py-1"
                     >
                       {message.insight.dificuldade}
                     </Badge>
@@ -217,43 +149,42 @@ export default function Chatbot() {
                 )}
                 
                 {message.reasoning && message.reasoning.length > 0 && (
-                  <Collapsible open={message.showReasoning}>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleReasoning(message.id)}
-                        className="w-full justify-between text-xs text-gray-600 hover:text-gray-800"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Brain className="w-3 h-3" />
-                          Ver raciocínio do agente ({message.reasoning.length} passos)
-                        </div>
-                        {message.showReasoning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="mt-2 p-3 bg-yellow-50 rounded-lg border">
-                        <div className="text-xs text-yellow-800 space-y-1">
+                  <div className="mt-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleReasoning(message.id)}
+                      className="w-full justify-between text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-xl transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        Ver raciocínio do agente ({message.reasoning.length} passos)
+                      </div>
+                      {message.showReasoning ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </Button>
+                    
+                    {message.showReasoning && (
+                      <div className="mt-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-100">
+                        <div className="text-xs text-amber-800 space-y-2">
                           {message.reasoning.map((step, idx) => (
-                            <div key={idx} className="font-mono whitespace-pre-wrap">
+                            <div key={idx} className="font-mono whitespace-pre-wrap bg-white/50 p-2 rounded-lg">
                               {step}
                             </div>
                           ))}
                         </div>
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                    )}
+                  </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         );
         
       case "system":
         return (
-          <div key={message.id} className="flex justify-center mb-2">
-            <div className="bg-red-50 text-red-700 text-xs p-2 rounded">
+          <div key={message.id} className="flex justify-center mb-3">
+            <div className="bg-red-50 text-red-700 text-xs p-3 rounded-xl border border-red-100">
               {message.text}
             </div>
           </div>
@@ -265,89 +196,153 @@ export default function Chatbot() {
   };
 
   return (
-    <motion.div className="fixed bottom-4 right-4 z-50" initial={{ scale: 0 }} animate={{ scale: 1 }}>
-      <Button
-        onClick={() => setIsOpen(!isOpen)}
-        className="bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700"
-      >
-        {isOpen ? "✕" : "💬"}
-      </Button>
-
+    <>
+      {/* Overlay de fundo quando o chat estiver aberto */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 15 }}
-            className="mt-3 w-96 h-[500px] bg-white rounded-xl shadow-2xl flex flex-col"
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Assistente IA</CardTitle>
-            </CardHeader>
-            
-            <CardContent className="flex-1 overflow-y-auto px-4">
-              {messages.map(renderMessage)}
-              
-              {/* Live streaming indicators */}
-              {isLoading && (
-                <div className="mb-4">
-                  <Card className="max-w-md">
-                    <CardContent className="p-4">
-                      {currentAnswer ? (
-                        <div className="text-gray-800 whitespace-pre-wrap break-words mb-3">
-                          {currentAnswer}<span className="animate-pulse">|</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-gray-600 mb-3">
-                          <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                          <span className="text-sm">Aguardando resposta...</span>
-                        </div>
-                      )}
-                      
-                      {currentReasoning.length > 0 ? (
-                        <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
-                          <div className="flex items-center gap-1 mb-1">
-                            <Brain className="w-3 h-3 animate-pulse" />
-                            <span>Processando...</span>
-                          </div>
-                          <div className="font-mono">
-                            {currentReasoning[currentReasoning.length - 1]}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded flex items-center gap-1">
-                          <Brain className="w-3 h-3 animate-pulse" />
-                          <span>Iniciando análise...</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-              
-              <div ref={bottomRef} />
-            </CardContent>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-            <div className="flex m-4 gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={keyHandler}
-                placeholder="Digite sua mensagem…"
-                className="flex-1 border rounded-lg p-2 text-sm focus:outline-none focus:ring focus:border-blue-400"
-                disabled={isLoading}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={isLoading}
-                size="sm"
-              >
-                {isLoading ? "…" : "Enviar"}
-              </Button>
+      {/* Botão flutuante para abrir o chat quando fechado */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <Button
+              onClick={() => setIsOpen(true)}
+              className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-110"
+            >
+              <MessageSquare className="w-6 h-6" />
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Painel do chat */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed right-0 top-0 h-full w-96 z-50"
+          >
+            <div className="h-full bg-white shadow-2xl flex flex-col border-l border-gray-200">
+              {/* Header do chat */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    💬
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">Assistente IA</h3>
+                    <p className="text-blue-100 text-xs">Sempre pronto para ajudar</p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="text-white hover:bg-white/20 rounded-full w-8 h-8 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Área de mensagens */}
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50/30">
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <Brain className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h4 className="text-gray-700 font-medium mb-2">Como posso ajudar?</h4>
+                    <p className="text-gray-500 text-sm">Faça uma pergunta sobre seus estudos</p>
+                  </div>
+                )}
+                
+                {messages.map(renderMessage)}
+                
+                {/* Indicadores de carregamento */}
+                {isLoading && (
+                  <div className="mb-4">
+                    <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md shadow-sm max-w-md overflow-hidden">
+                      <div className="p-5">
+                        {currentAnswer ? (
+                          <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
+                            {currentAnswer}<span className="animate-pulse text-blue-500">|</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 text-gray-600 mb-4">
+                            <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                            <span className="text-sm">Pensando...</span>
+                          </div>
+                        )}
+                        
+                        {currentReasoning.length > 0 ? (
+                          <div className="text-xs text-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-xl border border-amber-100">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Brain className="w-4 h-4 animate-pulse" />
+                              <span className="font-medium">Processando...</span>
+                            </div>
+                            <div className="font-mono bg-white/50 p-2 rounded-lg">
+                              {currentReasoning[currentReasoning.length - 1]}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 bg-gray-100 p-3 rounded-xl flex items-center gap-2">
+                            <Brain className="w-4 h-4 animate-pulse" />
+                            <span>Iniciando análise...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={bottomRef} />
+              </div>
+
+              {/* Área de input */}
+              <div className="p-4 bg-white border-t border-gray-100">
+                <div className="flex gap-3">
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={keyHandler}
+                    placeholder="Digite sua mensagem…"
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || !input.trim()}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl px-6 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    ) : (
+                      "Enviar"
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 }
