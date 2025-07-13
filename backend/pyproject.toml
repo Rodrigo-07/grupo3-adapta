@@ -23,4 +23,5 @@ dependencies = [
   "python-dotenv>=1.0.1",
   "faster-whisper>=1.1.1",
   "ffmpeg>=1.4",
+  "aiofiles"
 ]
