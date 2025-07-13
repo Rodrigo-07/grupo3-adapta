@@ -81,7 +81,7 @@ async def create_lesson_with_upload(
 
     stored_video = await store_upload(db, video, course_id, lesson.id)
     
-    results, transcript_segments, path_names = process_local_video(stored_video.path)
+    results, transcript_segments, path_names = process_local_video(stored_video.path, course_id=course_id, lesson_id=lesson.id)
     
     transcript_text = "\n".join([seg.text for seg in transcript_segments])
     lesson.video_transcript = transcript_text
