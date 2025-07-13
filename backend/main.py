@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.users import router as users_router
 from app.payments import router as payments_router
 from app.contents import router as contents_router
@@ -20,9 +21,17 @@ app = FastAPI(
     on_startup=[create_tables],
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:9002"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(payments_router, prefix="/payments", tags=["Payments"])
-app.include_router(contents_router, prefix="/courses", tags=["Contents"])
+app.include_router(contents_router, prefix="/contents", tags=["Contents"])
 app.include_router(courses_router, prefix="/courses", tags=["Courses & Lessons"])
 
 @app.get("/")
