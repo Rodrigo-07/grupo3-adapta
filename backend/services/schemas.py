@@ -30,6 +30,7 @@ class CourseCreate(BaseModel):
 
 class CourseOut(CourseCreate):
     id: int
+    cover_image_path: Optional[str] = None
 
     class Config:
         orm_mode = True

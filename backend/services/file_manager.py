@@ -50,7 +50,7 @@ async def store_upload(
         path=str(dest),
         mime=upload.content_type or "application/octet-stream",
         course_id=course_id,
-        lesson_id=lesson_id,
+        lesson_id=lesson_id if lesson_id is not None else None,
     )
     return file
 
