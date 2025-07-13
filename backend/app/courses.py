@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Query
@@ -16,9 +17,11 @@ from services.schemas import CourseCreate, CourseOut
 import json
 from typing import List, Dict, Any, Optional
 
-from services.course_manager import create_course, create_lesson, get_course, get_lesson, list_lessons_by_course
+from services.course_manager import create_course, create_lesson, get_course, get_lesson, list_lessons_by_course, save_file_db
 from services.file_manager import store_upload
 from services.schemas import CourseCreate, CourseOut, LessonIn, LessonOut
+
+from app.shorts_module.services import process_local_video
 
 async def get_db() -> AsyncSession:  # pragma: no cover
     async with SessionLocal() as session:
@@ -77,12 +80,28 @@ async def create_lesson_with_upload(
     )
 
     stored_video = await store_upload(db, video, course_id, lesson.id)
+    
+    results, transcript_segments, path_names = process_local_video(stored_video.path, course_id=course_id, lesson_id=lesson.id)
+    
+    transcript_text = "\n".join([seg.text for seg in transcript_segments])
+    lesson.video_transcript = transcript_text
     lesson.video = stored_video.path
     await db.commit()
-
+    
     
     for file_up in safe_attachments:
         await store_upload(db, file_up, course_id, lesson.id)
+        
+    for path in path_names:
+        await save_file_db(
+            db,
+            name=os.path.basename(path),
+            path=path,
+            mime="video/mp4",
+            course_id=course_id,
+            lesson_id=lesson.id,
+            category="shorts"
+        )
 
     return lesson
 

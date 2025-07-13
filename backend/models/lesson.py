@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, ForeignKey
+from sqlalchemy import Integer, String, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional
 from .database import Base
@@ -13,6 +13,8 @@ class Lesson(Base):
 
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"))
     course: Mapped["Course"] = relationship(back_populates="lessons")
+    
+    video_transcript: Mapped[Optional[str]] = mapped_column(Text)
 
     files: Mapped[list["File"]] = relationship(
         back_populates="lesson", cascade="all, delete-orphan"
