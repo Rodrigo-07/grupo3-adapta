@@ -7,11 +7,17 @@ import { useLmsStore } from "@/store/lmsStore";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 
 export default function CreatorDashboard() {
   const courses = useLmsStore((state) => state.courses);
   const getClassesByCourse = useLmsStore((state) => state.getClassesByCourse);
+  const fetchCourses = useLmsStore((state) => state.fetchCourses);
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   if (!hasMounted) {
     return (
@@ -35,6 +41,8 @@ export default function CreatorDashboard() {
     );
   }
 
+  const uniqueCourses = Array.from(new Map(courses.map(c => [c.id, c])).values());
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
@@ -46,9 +54,9 @@ export default function CreatorDashboard() {
           </Link>
         </Button>
       </div>
-      {courses.length > 0 ? (
+      {uniqueCourses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {courses.map((course) => (
+          {uniqueCourses.map((course) => (
             <CourseCard
               key={course.id}
               course={course}

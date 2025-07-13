@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadPlaceholder } from "@/components/UploadPlaceholder";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Course name must be at least 3 characters long." }),
@@ -22,6 +23,7 @@ export default function NewCourseForm() {
   const router = useRouter();
   const addCourse = useLmsStore((state) => state.addCourse);
   const { toast } = useToast();
+  const [coverImage, setCoverImage] = useState<File | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -31,14 +33,33 @@ export default function NewCourseForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // TODO: replace with API call
-    const newCourse = addCourse(values);
-    toast({
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!coverImage) {
+      toast({
+        title: "Cover Image Required",
+        description: "Please upload a cover image for your course.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const formData = new FormData();
+    formData.append('title', values.name);
+    formData.append('description', values.description);
+    formData.append('cover_image', coverImage);
+    const newCourse = await addCourse(formData);
+    if (newCourse && newCourse.id) {
+      toast({
         title: "Course Created!",
         description: `"${values.name}" has been successfully created.`,
-    });
-    router.push(`/creator/${newCourse.id}`);
+      });
+      router.push(`/creator/${newCourse.id}`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to create course. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -71,6 +92,19 @@ export default function NewCourseForm() {
                     <FormLabel>Course Description</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Describe what students will learn in this course..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cover_image"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Cover Image</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="image/*" onChange={e => setCoverImage(e.target.files?.[0] || null)} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

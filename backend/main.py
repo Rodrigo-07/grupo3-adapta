@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from app.users import router as users_router
 from app.payments import router as payments_router
 from app.contents import router as contents_router
@@ -15,11 +18,29 @@ async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+class CORStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
 app = FastAPI(
     title="FastPay API",
     version="0.1.0",
     on_startup=[create_tables],
 )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development; restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/uploads", CORStaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(payments_router, prefix="/payments", tags=["Payments"])

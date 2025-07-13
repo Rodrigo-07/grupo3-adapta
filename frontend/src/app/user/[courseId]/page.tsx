@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useLmsStore } from "@/store/lmsStore";
 import { useHasMounted } from "@/hooks/use-has-mounted";
-import { VideoPlayerStub } from "@/components/VideoPlayerStub";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,15 +24,33 @@ import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react";
 export default function CoursePlayer() {
   const params = useParams();
   const courseId = params.courseId as string;
-  const { getCourseById, getClassesByCourse } = useLmsStore();
+  const getCourseById = useLmsStore((state) => state.getCourseById);
+  const classes = useLmsStore((state) => state.getClassesByCourse(courseId));
+  const fetchClasses = useLmsStore((state) => state.fetchClasses);
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    console.log('[UserCoursePage] Fetching classes for courseId:', courseId);
+    fetchClasses(courseId);
+  }, [fetchClasses, courseId]);
   
   const course = getCourseById(courseId);
-  const classes = getClassesByCourse(courseId);
+  console.log('[UserCoursePage] courseId:', courseId, 'classes:', classes);
 
   const [activeClassId, setActiveClassId] = useState(classes[0]?.id);
   const [progress, setProgress] = useState(33); // Mock progress
   const [activeTab, setActiveTab] = useState('video');
+
+  // Add helper function to get video URL (move above usage)
+  const getVideoUrl = (videoPath?: string) => {
+    if (!videoPath) return "";
+    // Remove '/app/uploads/' prefix if present
+    let relPath = videoPath;
+    if (relPath.startsWith('/app/uploads/')) {
+      relPath = relPath.slice('/app/uploads/'.length);
+    }
+    return `http://localhost:8000/contents/media/${relPath}`;
+  };
 
   if (!hasMounted) {
     return <CoursePlayerSkeleton />;
@@ -48,6 +65,13 @@ export default function CoursePlayer() {
   }
 
   const activeClass = classes.find(c => c.id === activeClassId) || classes[0];
+
+  // Debug logs for video playback
+  console.log('[CoursePlayer] activeClass:', activeClass);
+  if (activeClass) {
+    console.log('[CoursePlayer] activeClass.video:', activeClass.video);
+    console.log('[CoursePlayer] computed video URL:', getVideoUrl(activeClass.video));
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -68,7 +92,22 @@ export default function CoursePlayer() {
             </TabsList>
           </Tabs>
           {/* Only show video in 'video' tab */}
-          {activeTab === 'video' && <div className="mt-6"><VideoPlayerStub /></div>}
+          {activeTab === 'video' && (
+            <div className="mt-6">
+              {activeClass?.video ? (
+                <video
+                  src={getVideoUrl(activeClass.video)}
+                  controls
+                  className="w-full rounded-lg"
+                  style={{ maxHeight: 480 }}
+                />
+              ) : (
+                <div className="aspect-video w-full bg-slate-800 rounded-lg flex items-center justify-center text-slate-400">
+                  No video available for this class.
+                </div>
+              )}
+            </div>
+          )}
           <div className="my-6">
             <div className="flex justify-between items-center mb-2">
                 <p className="text-sm text-muted-foreground">Your Progress</p>
