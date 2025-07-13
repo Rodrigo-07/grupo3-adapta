@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Query
 from pydantic import BaseModel, Field, constr
@@ -57,11 +57,16 @@ async def create_lesson_with_upload(
     title: str = Form(..., min_length=1),
     description: Optional[str] = Form(None, max_length=1000),
     video: UploadFile = File(..., description="Arquivo de vídeo principal"),
-    attachments: Optional[List[UploadFile]] = File(None),
+    attachments: Annotated[List[Any], File()] = [],
     db: AsyncSession = Depends(get_db),
 ):
     if await get_course(db, course_id) is None:
         raise HTTPException(status_code=404, detail="Course not found")
+    
+    safe_attachments = [
+        f for f in (attachments or [])
+        if isinstance(f, UploadFile) and f.filename
+    ]
 
     lesson = await create_lesson(
         db,
@@ -75,9 +80,8 @@ async def create_lesson_with_upload(
     lesson.video = stored_video.path
     await db.commit()
 
-    for file_up in attachments or []:
-        if not file_up.filename:      # ignora strings vazias
-            continue
+    
+    for file_up in safe_attachments:
         await store_upload(db, file_up, course_id, lesson.id)
 
     return lesson

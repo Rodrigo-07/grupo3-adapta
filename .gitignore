@@ -16,3 +16,7 @@ backend/data
 backend/app/shorts_module/videos
 
 processed
+# Python cache
+__pycache__/
+*.py[cod]
+

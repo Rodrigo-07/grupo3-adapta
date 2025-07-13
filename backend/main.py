@@ -23,7 +23,7 @@ app = FastAPI(
 
 app.include_router(users_router, prefix="/users", tags=["Users"])
 app.include_router(payments_router, prefix="/payments", tags=["Payments"])
-app.include_router(contents_router, prefix="/courses", tags=["Contents"])
+app.include_router(contents_router, prefix="/contents", tags=["Contents"])
 app.include_router(courses_router, prefix="/courses", tags=["Courses & Lessons"])
 app.include_router(shorts_router, prefix="/shorts")
 
