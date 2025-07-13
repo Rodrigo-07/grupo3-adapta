@@ -6,15 +6,17 @@ class InsightJSON(BaseModel):
     tema: str
     dificuldade: str
 
+
 task_answer = Task(
     description=(
         "Use o tool `rag_search` para responder.\n"
-        "Chame EXATAMENTE assim (sem alterar a chave):\n\n"
-        "```rag_search({\"question\": \"{question}\", \"course_id\": \"{course_id}\"})```"
+        "Exemplo: ```rag_search({\"question\":\"{question}\"})```"
     ),
-    required_inputs=["question", "course_id"],
-    expected_output="Até 3 parágrafos em PT-BR.",
-)
+    required_inputs=["question"],
+    expected_output="Resposta clara e concisa, citando fontes quando possível.",
+    output_json=None,
+) 
+
 
 task_insight = Task(
     description=(

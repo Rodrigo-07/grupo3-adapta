@@ -16,9 +16,7 @@ crew = Crew(
     verbose=False,
 )
 
-async def run_chat(course_id: int, question: str):
+async def run_chat( question: str):
     """Executa fluxo completo e devolve (resposta, insight_dict)."""
-    print(f"Executando run_chat com course_id={course_id} e question='{question}'")
-    await crew.kickoff_async(inputs={"question": question,
-                                     "course_id": course_id})
+    await crew.kickoff_async(inputs={"question": question})
     return tasks.task_answer.output.raw, tasks.task_insight.output.json_dict

@@ -12,10 +12,11 @@ TEXT_SPLITTER = RecursiveCharacterTextSplitter(
 )
 CHROMA_CLIENT = chromadb.PersistentClient(path="data/chroma")
 
+GLOBAL_COLLECTION_NAME = "global_collection"
+
 from services.embed import embed_batch
 
 def process_and_index(
-    course_id: str,
     lecture_id: Optional[str],
     files: List[UploadFile],
     raw_texts: List[str],
@@ -25,29 +26,23 @@ def process_and_index(
 
     for up in files:
         text = _extract_text_from_file(up)
-        _append_chunks(text, docs, metas, course_id, lecture_id, up.filename, "file")
+        _append_chunks(text, docs, metas, lecture_id, up.filename, "file")
 
     for txt in raw_texts:
-        _append_chunks(txt, docs, metas, course_id, lecture_id, "inline", "raw")
+        _append_chunks(txt, docs, metas, lecture_id, "inline", "raw")
 
-    # for url in links:
-    #     page_txt = _fetch_url_text(url)
-    #     _append_chunks(page_txt, docs, metas, course_id, lecture_id, url, "url")
-    print(f"Indexando {len(docs)} documentos para o curso {course_id}...")
-    course_name = f"course_{course_id}"
-    print(f"Indexando {len(docs)} documentos para o curso {course_name}...")
+    print(f"Indexando {len(docs)} documentos na coleção global...")
 
-    collection = CHROMA_CLIENT.get_or_create_collection(name=course_name)
+    collection = CHROMA_CLIENT.get_or_create_collection(name=GLOBAL_COLLECTION_NAME)
     ids = [uuid4().hex for _ in docs]
     embeds = embed_batch(docs)
     collection.add(ids=ids, documents=docs, embeddings=embeds, metadatas=metas)
 
-def _append_chunks(text, docs, metas, cid, lid, src, kind):
+def _append_chunks(text, docs, metas, lid, src, kind):
     for chunk in TEXT_SPLITTER.split_text(text):
         docs.append(chunk)
         metas.append(
             {
-                "course_id": cid,
                 "lecture_id": lid,
                 "src": src,
                 "kind": kind,

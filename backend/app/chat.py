@@ -11,6 +11,6 @@ class ChatIn(BaseModel):
 
 @router.post("/{course_id}/chat", status_code=status.HTTP_200_OK)
 async def chat(course_id: int, body: ChatIn) -> Dict[str, Any]:
-    answer, insight = await run_chat(course_id, body.message)
+    answer, insight = await run_chat(body.message)
     # await store_insight(course_id, body.user_id, insight)
     return {"answer": answer, "insight": insight}

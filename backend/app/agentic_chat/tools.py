@@ -2,11 +2,19 @@ from crewai.tools import tool
 from services.embed import get_retriever
 
 @tool("rag_search")
-def rag_search(question: str, course_id: int) -> str:
+def rag_search(question: str, k: int = 8) -> str:  # ⬅️ sem course_id
     """
-    Busca trechos relevantes do curso para servir de contexto.
-    Retorna uma string concatenada (máx. 4 × k ≈ 3 000 tokens).
+    Executes a retrieval-augmented generation (RAG) search to find relevant documents based on the given question.
+
+    Args:
+        question (str): The query or question to search for relevant documents.
+        k (int, optional): The number of top documents to retrieve. Defaults to 8.
+
+    Returns:
+        str: A concatenated string of the content from the retrieved documents, separated by "---".
+             If no documents are found, returns a warning message indicating no results.
     """
-    retriever = get_retriever(course_id, k=8)
-    docs = retriever.invoke(question)
+    docs = get_retriever(k).invoke(question)
+    if not docs:
+        return "⚠️ Nada encontrado no momento."
     return "\n\n---\n\n".join(d.page_content for d in docs)

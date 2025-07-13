@@ -30,7 +30,6 @@ async def upload_contents(
 
     await asyncio.to_thread(
         process_and_index,
-        course_id,
         lecture_id,
         files,
         raw_texts or [],

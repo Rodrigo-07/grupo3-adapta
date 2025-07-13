@@ -8,6 +8,8 @@ import asyncio, random
 from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception_type
 from google.genai import errors as gerrors
 
+from langchain_core.embeddings import Embeddings
+
 import time
 
 from services.ingest import CHROMA_CLIENT
@@ -48,14 +50,22 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
         time.sleep(_MIN_DELAY + random.random() * _JITTER)  # sync sleep
     return vecs
 
-def get_retriever(course_id: int, k: int = 8):
+class GeminiEmbeddings(Embeddings):
+    def embed_documents(self, texts):
+        return embed_batch(texts)
+    def embed_query(self, text):
+        return embed_batch([text])[0]
+
+
+_EMBED = GeminiEmbeddings()
+
+def get_retriever(k: int = 8):
     """
-    Configura um retriever para buscar trechos relevantes de um curso usando Gemini embeddings.
+    Configura um retriever para buscar trechos relevantes usando Gemini embeddings.
     """
-    collection_name = f"course_{course_id}"
     vectorstore = Chroma(
-        collection_name=collection_name,
-        embedding_function=embed_batch,
+        collection_name="global_collection",
+        embedding_function=_EMBED,
         client=CHROMA_CLIENT,
     )
     retriever = vectorstore.as_retriever(search_kwargs={"k": k})
