@@ -21,7 +21,8 @@ from services.course_manager import create_course, create_lesson, get_course, ge
 from services.file_manager import store_upload
 from services.schemas import CourseCreate, CourseOut, LessonIn, LessonOut
 
-from app.shorts_module.services import process_local_video
+from app.shorts_agent.services import process_local_video
+from app.threads_agent.agent import generate_thread_from_transcript
 
 async def get_db() -> AsyncSession:  # pragma: no cover
     async with SessionLocal() as session:
@@ -83,9 +84,13 @@ async def create_lesson_with_upload(
     
     results, transcript_segments, path_names = process_local_video(stored_video.path, course_id=course_id, lesson_id=lesson.id)
     
-    transcript_text = "\n".join([seg.text for seg in transcript_segments])
+    transcript_text = "\n".join([seg.text for seg in transcript_segments]) 
+    
+    threads = generate_thread_from_transcript(transcript_text)
+    
     lesson.video_transcript = transcript_text
     lesson.video = stored_video.path
+    lesson.thread = {"messages": threads}
     await db.commit()
     
     

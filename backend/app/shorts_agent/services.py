@@ -1,5 +1,5 @@
 from .utils import extract_audio, transcribe_audio, clip_video
-from .llm import chunk_transcript_with_gemini
+from .agent import chunk_transcript_with_gemini
 from pathlib import Path
 import os
 
