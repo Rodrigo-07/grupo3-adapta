@@ -1,7 +1,8 @@
 import os
+from sqlalchemy import select as sa_select 
 import uuid
 from pathlib import Path
-from typing import AsyncIterator, Optional, Tuple
+from typing import AsyncIterator, List, Optional, Tuple
 import mimetypes
 import re
 
@@ -147,3 +148,23 @@ def delete_physical_file(file: File) -> None:
     p = Path(file.path)
     if p.exists():
         p.unlink()
+        
+        
+async def list_files_by_course_or_lesson(
+    session: AsyncSession,
+    *,
+    course_id: int,
+    lesson_id: Optional[int] = None,
+    category: Optional[str] = None,
+) -> list[File]:
+
+    stmt = sa_select(File).where(File.course_id == course_id)
+
+    if lesson_id is not None:
+        stmt = stmt.where(File.lesson_id == lesson_id)
+
+    if category is not None:
+        stmt = stmt.where(File.category == category)
+
+    result = await session.execute(stmt)
+    return list(result.scalars())
