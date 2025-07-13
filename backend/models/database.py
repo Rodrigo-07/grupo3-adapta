@@ -7,6 +7,6 @@ DB_URL = os.getenv(
     "postgresql+asyncpg://postgres:postgres@db:5432/fastpay",
 )
 
-engine = create_async_engine(DB_URL, echo=False)
+engine = create_async_engine(DB_URL, echo=True)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 Base = declarative_base()
