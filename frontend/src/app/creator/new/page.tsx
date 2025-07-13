@@ -31,14 +31,21 @@ export default function NewCourseForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // TODO: replace with API call
-    const newCourse = addCourse(values);
-    toast({
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const newCourse = await addCourse(values);
+    if (newCourse && newCourse.id) {
+      toast({
         title: "Course Created!",
         description: `"${values.name}" has been successfully created.`,
-    });
-    router.push(`/creator/${newCourse.id}`);
+      });
+      router.push(`/creator/${newCourse.id}`);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to create course. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (

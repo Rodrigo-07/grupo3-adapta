@@ -25,6 +25,7 @@ export default function NewClassForm() {
   const courseId = params.courseId as string;
   const addClass = useLmsStore((state) => state.addClass);
   const getCourseById = useLmsStore((state) => state.getCourseById);
+  const fetchClasses = useLmsStore((state) => state.fetchClasses);
   const course = getCourseById(courseId);
   const { toast } = useToast();
 
@@ -36,13 +37,14 @@ export default function NewClassForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // TODO: replace with API call
-    addClass({ ...values, courseId });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    const newClass = await addClass({ ...values, courseId });
     toast({
-        title: "Class Added!",
-        description: `"${values.name}" has been added to the course.`,
+      title: newClass ? "Class Added!" : "Error",
+      description: newClass ? `"${values.name}" has been added to the course.` : "Failed to add class. Please try again.",
+      variant: newClass ? undefined : "destructive",
     });
+    await fetchClasses(courseId);
     router.push(`/creator/${courseId}`);
   }
 

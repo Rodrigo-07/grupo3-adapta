@@ -22,6 +22,8 @@ export default function UserDashboard() {
     );
   }, [courses, searchTerm]);
 
+  const uniqueFilteredCourses = useMemo(() => Array.from(new Map(filteredCourses.map(c => [c.id, c])).values()), [filteredCourses]);
+
   if (!hasMounted) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -58,9 +60,9 @@ export default function UserDashboard() {
         />
       </div>
 
-      {filteredCourses.length > 0 ? (
+      {uniqueFilteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredCourses.map((course) => (
+          {uniqueFilteredCourses.map((course) => (
             <CourseCard
               key={course.id}
               course={course}
