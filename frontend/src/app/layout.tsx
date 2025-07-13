@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import Header from '@/components/Header';
 import { PageTransition } from '@/components/PageTransition';
+import Chatbot from '@/components/ui/chatbot';
 
 export const metadata: Metadata = {
   title: 'Camufy',
@@ -42,6 +43,7 @@ export default function RootLayout({
           <PageTransition>{children}</PageTransition>
         </main>
         <Toaster />
+        <Chatbot />
       </body>
     </html>
   );
