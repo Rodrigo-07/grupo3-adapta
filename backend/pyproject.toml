@@ -21,4 +21,5 @@ dependencies = [
   "python-multipart>=0.0.9",
   "google-genai",
   "python-dotenv>=1.0.1",
+  "aiofiles"
 ]

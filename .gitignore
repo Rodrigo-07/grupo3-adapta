@@ -9,4 +9,6 @@ __pycache__/
 *.db
 __pycache__
 
+uploads/
+
 backend/data
