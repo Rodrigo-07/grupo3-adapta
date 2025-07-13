@@ -27,3 +27,14 @@ task_insight = Task(
     expected_output="JSON conforme schema",
     output_json=InsightJSON,
 )
+
+task_summary = Task(
+    description=(
+        "Com base na resposta completa do agente anterior, "
+        "crie uma mensagem resumida de no máximo 2-3 frases que capture os pontos principais. "
+        "Seja direto, prático e use linguagem simples. "
+        "Analise o contexto das tasks anteriores para criar um resumo efetivo."
+    ),
+    expected_output="Resumo conciso e direto da resposta principal.",
+    output_json=None,
+)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from app.agentic_chat.crew import run_chat, run_chat_stream
+from app.agentic_chat.crew import run_chat, run_chat_stream, get_reasoning_steps
 from typing import Dict, Any
 import json
 import asyncio
@@ -15,9 +15,15 @@ class ChatIn(BaseModel):
 
 @router.post("/{course_id}/chat", status_code=status.HTTP_200_OK)
 async def chat(course_id: int, body: ChatIn) -> Dict[str, Any]:
-    answer, insight = await run_chat(body.message)
+    answer, insight, summary = await run_chat(body.message)
+    reasoning = get_reasoning_steps()  # Obter steps do reasoning
     # await store_insight(course_id, body.user_id, insight)
-    return {"answer": answer, "insight": insight}
+    return {
+        "answer": answer, 
+        "insight": insight, 
+        "summary": summary,
+        "reasoning": reasoning
+    }
 
 @router.post("/{course_id}/chat/stream")
 async def chat_stream(course_id: int, body: ChatIn):

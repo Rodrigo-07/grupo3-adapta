@@ -21,6 +21,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react";
+import Chatbot from "@/components/ui/chatbot";
 
 export default function CoursePlayer() {
   const params = useParams();
@@ -318,6 +319,9 @@ export default function CoursePlayer() {
           </Card>
         </div>
       </div>
+
+      {/* Chatbot Widget */}
+      <Chatbot />
     </div>
   );
 }

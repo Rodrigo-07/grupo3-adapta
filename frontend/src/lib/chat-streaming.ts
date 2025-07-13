@@ -1,16 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
-// Exemplo de como consumir o chat com streaming do reasoning
-export interface ChatStreamEvent {
-  type: 'start' | 'reasoning_step' | 'answer_chunk' | 'insight' | 'done' | 'error';
-  step?: string;
-  message?: string;
-  chunk?: string;
-  is_final?: boolean;
-  data?: any;
+// Interface para resposta completa do chat
+export interface ChatResponse {
+  reasoning: string[];
+  answer: string;
+  insight?: any;
+  summary?: string;
 }
 
-export class ChatStreamingClient {
+export class ChatClient {
   private baseUrl: string;
 
   constructor(baseUrl: string = 'http://localhost:8000') {
@@ -18,21 +16,19 @@ export class ChatStreamingClient {
   }
 
   /**
-   * Conecta ao endpoint de streaming do chat e processa eventos em tempo real
+   * Envia mensagem para o chat e aguarda resposta completa
    */
-  async streamChat(
+  async sendMessage(
     courseId: number,
     userId: number,
-    message: string,
-    onEvent: (event: ChatStreamEvent) => void
-  ): Promise<void> {
-    const url = `${this.baseUrl}/${courseId}/chat/stream`;
+    message: string
+  ): Promise<ChatResponse> {
+    const url = `${this.baseUrl}/${courseId}/chat`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
       },
       body: JSON.stringify({
         user_id: userId,
@@ -44,101 +40,96 @@ export class ChatStreamingClient {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) {
-      throw new Error('Response body is not readable');
-    }
-
-    try {
-      let buffer = '';
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        
-        // Processar eventos completos no buffer
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Manter linha incompleta no buffer
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              onEvent(eventData);
-            } catch (e) {
-              console.warn('Erro ao parsear evento:', line, e);
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
-    }
+    const data = await response.json();
+    return data as ChatResponse;
   }
 }
 
-// Exemplo de uso em um componente React
-export function useChatStreaming(courseId: number) {
+// Hook para gerenciar estado do chat
+export function useChat(courseId: number) {
   const [reasoning, setReasoning] = useState<string[]>([]);
   const [answer, setAnswer] = useState<string>('');
   const [insight, setInsight] = useState<any>(null);
+  const [summary, setSummary] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isReasoningExpanded, setIsReasoningExpanded] = useState(false);
 
-  const client = new ChatStreamingClient();
+  const client = new ChatClient();
 
-  const sendMessage = async (userId: number, message: string) => {
+  const sendMessage = useCallback(async (userId: number, message: string) => {
+    console.log('🚀 Enviando mensagem:', { courseId, userId, message });
+    
     setIsLoading(true);
+    setAnswer('');
+    setReasoning([]);
+    setInsight(null);
+    setSummary('');
+    setIsReasoningExpanded(false);
+
+    try {
+      console.log('📡 Fazendo requisição para o backend...');
+      const response = await client.sendMessage(courseId, userId, message);
+      
+      console.log('✅ Resposta recebida do backend:', response);
+      
+      // Verificar se os dados existem antes de setar
+      if (response.reasoning && Array.isArray(response.reasoning)) {
+        console.log('📝 Setando reasoning:', response.reasoning);
+        setReasoning(response.reasoning);
+      } else {
+        console.warn('⚠️ Reasoning não encontrado ou inválido:', response.reasoning);
+        setReasoning([]);
+      }
+      
+      if (response.answer) {
+        console.log('💬 Setando answer:', response.answer);
+        setAnswer(response.answer);
+      } else {
+        console.warn('⚠️ Answer não encontrado:', response.answer);
+        setAnswer('❌ Resposta não recebida do servidor.');
+      }
+      
+      if (response.insight) {
+        console.log('📊 Setando insight:', response.insight);
+        setInsight(response.insight);
+      }
+      
+      if (response.summary) {
+        console.log('📋 Setando summary:', response.summary);
+        setSummary(response.summary);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar mensagem:', error);
+      setAnswer('❌ Erro ao processar mensagem. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+      console.log('🏁 Processo finalizado');
+    }
+  }, [courseId, client]);
+
+  const toggleReasoning = useCallback(() => {
+    setIsReasoningExpanded(prev => !prev);
+  }, []);
+
+  const clearChat = useCallback(() => {
     setReasoning([]);
     setAnswer('');
     setInsight(null);
-
-    try {
-      await client.streamChat(courseId, userId, message, (event) => {
-        switch (event.type) {
-          case 'start':
-            setReasoning(prev => [...prev, event.message || '']);
-            break;
-            
-          case 'reasoning_step':
-            setReasoning(prev => [...prev, event.message || '']);
-            break;
-            
-          case 'answer_chunk':
-            setAnswer(prev => prev + (event.chunk || ''));
-            break;
-            
-          case 'insight':
-            setInsight(event.data);
-            setReasoning(prev => [...prev, event.message || '']);
-            break;
-            
-          case 'done':
-            setIsLoading(false);
-            break;
-            
-          case 'error':
-            console.error('Erro no streaming:', event.message);
-            setReasoning(prev => [...prev, `❌ ${event.message}`]);
-            setIsLoading(false);
-            break;
-        }
-      });
-    } catch (error) {
-      console.error('Erro ao conectar ao streaming:', error);
-      setIsLoading(false);
-    }
-  };
+    setSummary('');
+    setIsReasoningExpanded(false);
+    setIsLoading(false);
+  }, []);
 
   return {
     reasoning,
     answer,
     insight,
+    summary,
     isLoading,
-    sendMessage
+    isReasoningExpanded,
+    sendMessage,
+    toggleReasoning,
+    clearChat
   };
 }

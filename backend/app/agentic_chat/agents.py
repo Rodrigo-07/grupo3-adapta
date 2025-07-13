@@ -25,3 +25,16 @@ insight_agent = Agent(
     llm=gemini_llm,
     verbose=False,
 )
+
+summary_agent = Agent(
+    role="Resumidor de Conteúdo",
+    goal="Criar mensagens resumidas e diretas baseadas em respostas completas",
+    backstory=(
+        "Você é especialista em comunicação concisa. "
+        "Transforma respostas longas em mensagens curtas, práticas e fáceis de entender, "
+        "mantendo apenas os pontos mais importantes e acionáveis."
+        "Responda sempre em português brasileiro."
+    ),
+    llm=gemini_llm,
+    verbose=False,
+)
