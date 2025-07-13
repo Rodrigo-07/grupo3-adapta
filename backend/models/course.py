@@ -17,3 +17,6 @@ class Course(Base):
     files: Mapped[list["File"]] = relationship(
         back_populates="course", cascade="all, delete-orphan"
     )
+    cover_image_path: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, default=None
+    )

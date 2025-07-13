@@ -15,6 +15,7 @@ class File(Base):
 
     course_id: Mapped[Optional[int]] = mapped_column(ForeignKey("courses.id"), nullable=True)
     lesson_id: Mapped[Optional[int]] = mapped_column(ForeignKey("lessons.id"), nullable=True)
+    category: Mapped[str] = mapped_column(String(50), nullable=True)
 
     course: Mapped[Optional["Course"]] = relationship(back_populates="files")
     lesson: Mapped[Optional["Lesson"]] = relationship(back_populates="files")
