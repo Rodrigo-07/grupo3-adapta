@@ -70,7 +70,8 @@ def get_file_response(file: File, *, as_download: bool = True) -> FileResponse:
 
 
 RANGE_RE = re.compile(r"bytes=(\\d+)-(\\d+)?")
-DEFAULT_CHUNK = 8 * 1024 * 1024  # 8 MB
+DEFAULT_CHUNK = 256 * 1024  # 256KB
+
 
 
 def _parse_range(hdr: Optional[str], file_size: int) -> Tuple[int, int]:
