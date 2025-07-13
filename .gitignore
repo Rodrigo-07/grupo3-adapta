@@ -1,0 +1,14 @@
+.env
+
+venv
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+__pycache__
+
+uploads/
+
+backend/data

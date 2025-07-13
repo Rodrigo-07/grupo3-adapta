@@ -14,4 +14,12 @@ dependencies = [
   "httpx>=0.28.1",
   "langchain>=0.3.26",
   "google-generativeai>=0.8.5",
+  "chromadb>=0.4.24",
+  "pypdf>=4.2.0",
+  "beautifulsoup4>=4.12.3",
+  "openai>=1.30.5",
+  "python-multipart>=0.0.9",
+  "google-genai",
+  "python-dotenv>=1.0.1",
+  "aiofiles"
 ]
