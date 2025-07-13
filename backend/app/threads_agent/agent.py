@@ -23,6 +23,9 @@ Each tweet:
 
 Respond with a JSON array of tweets, in order.
 
+Important:
+- The answer must be in brazilian Portuguese.
+
 Transcript:
 {transcript[:12000]}  # truncate if necessary
 """

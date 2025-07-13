@@ -6,8 +6,8 @@ import { useLmsStore } from "@/store/lmsStore";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2 } from "lucide-react";
 import {
@@ -17,6 +17,10 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react";
 
 export default function CoursePlayer() {
   const params = useParams();
@@ -30,6 +34,7 @@ export default function CoursePlayer() {
   const [progress, setProgress] = useState(33);
   const [activeTab, setActiveTab] = useState("video");
   const [shorts, setShorts] = useState<string[]>([]);
+  const [threadsMensages, setThreadsMessages] = useState<string[]>([]);
 
   useEffect(() => {
     fetchClasses(courseId);
@@ -70,6 +75,31 @@ export default function CoursePlayer() {
     };
 
     fetchShorts();
+  }, [courseId, activeClass?.id, activeTab]);
+
+  useEffect(() => {
+    if (!courseId || !activeClass?.id || activeTab !== "thread") return;
+
+    const fetchThreads = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/courses/courses/${courseId}/lessons/${activeClass.id}?with_files=false`
+        );
+        const data = await res.json();
+
+        const threadMessages = data.thread?.messages || [];
+        const cleanMsgs = threadMessages.map((m: { tweet: string }) =>
+          m.tweet.slice(3).trim()
+        );
+        setThreadsMessages(cleanMsgs);
+        console.log("Thread messages:", cleanMsgs);
+      } catch (err) {
+        console.error("Failed to fetchx threads:", err);
+        setThreadsMessages([]);
+      }
+    };
+
+    fetchThreads();
   }, [courseId, activeClass?.id, activeTab]);
 
   if (!hasMounted) return <CoursePlayerSkeleton />;
@@ -156,6 +186,102 @@ export default function CoursePlayer() {
             </div>
             <Progress value={progress} />
           </div>
+            {activeTab === "thread" && (
+            <div className="flex flex-col items-center w-full">
+              <div className="w-full max-w-2xl">
+              {/* Main thread intro */}
+              <Card className="rounded-xl mb-4 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-sm">
+                <CardHeader className="flex flex-row items-center gap-4 p-6 pb-2">
+                <Avatar className="h-14 w-14">
+                  <AvatarImage src="https://i.pravatar.cc/150?img=10" alt="Jane Doe" />
+                  <AvatarFallback>JD</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-semibold leading-tight text-lg">
+                  Jane Doe <span className="text-yellow-400">◆</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">@janedoe · 2h</div>
+                </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-0 text-base">
+                <span className="font-medium">Thread:</span> Vamos falar sobre {activeClass?.name}?
+                </CardContent>
+                <div className="px-6 pb-4 text-xs text-muted-foreground flex items-center gap-2">
+                1:00 PM · 12 de jul de 2025 · <span className="font-semibold">32,9 mil</span> Visualizações
+                </div>
+                <div className="px-6 pb-4 flex gap-8 text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <MessageCircle className="w-4 h-4" /> 8
+                </div>
+                <div className="flex items-center gap-1">
+                  <Repeat2 className="w-4 h-4" /> 11
+                </div>
+                <div className="flex items-center gap-1">
+                  <Heart className="w-4 h-4" /> 418
+                </div>
+                <div className="flex items-center gap-1">
+                  <Share2 className="w-4 h-4" /> 537
+                </div>
+                </div>
+              </Card>
+              <Separator className="my-2" />
+              {/* Threaded tweets */}
+              <div className="relative">
+                {/* Vertical line for thread linking */}
+                <div
+                className="absolute left-7 top-0 bottom-0 w-px bg-muted-foreground/20 z-0"
+                style={{ marginLeft: "0.75rem" }}
+                />
+                <div className="space-y-0 relative z-10">
+                {threadsMensages.map((message, i) => (
+                  <div key={i} className="relative flex">
+                  {/* Avatar aligned with line */}
+                  <div className="flex flex-col items-center mr-4">
+                    <Avatar className="h-12 w-12 z-10">
+                    <AvatarImage src="https://i.pravatar.cc/150?img=10" alt="Jane Doe" />
+                    <AvatarFallback>JD</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="flex-1">
+                    <Card className="rounded-xl mb-4 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-sm">
+                    <CardHeader className="flex flex-row items-center gap-2 p-4 pb-2">
+                      <div>
+                      <div className="font-semibold leading-tight text-base">
+                        Jane Doe <span className="text-yellow-400">◆</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">@janedoe · 9h</div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 text-base">{message}</CardContent>
+                    <div className="px-4 pb-3 flex gap-8 text-muted-foreground text-sm">
+                      <div className="flex items-center gap-1">
+                      <MessageCircle className="w-4 h-4" /> 1
+                      </div>
+                      <div className="flex items-center gap-1">
+                      <Repeat2 className="w-4 h-4" /> 5
+                      </div>
+                      <div className="flex items-center gap-1">
+                      <Heart className="w-4 h-4" /> 200
+                      </div>
+                      <div className="flex items-center gap-1">
+                      <Share2 className="w-4 h-4" /> 3
+                      </div>
+                    </div>
+                    </Card>
+                  </div>
+                  </div>
+                ))}
+                </div>
+              </div>
+              </div>
+            </div>
+            )}
+
+          {["ebook", "podcast", "quiz"].includes(activeTab) && (
+            <Card className="flex items-center justify-center p-10 rounded-2xl">
+              <p className="text-muted-foreground">Content for {activeTab} is coming soon!</p>
+            </Card>
+          )}
 
           {activeTab === "video" && (
             <p className="text-muted-foreground">{activeClass?.description}</p>
