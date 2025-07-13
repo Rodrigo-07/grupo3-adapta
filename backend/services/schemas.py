@@ -42,6 +42,7 @@ class LessonOut(BaseModel):
     description: Optional[str] = None
     video: Optional[str] = None
     course_id: int
+    thread: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
     
