@@ -293,13 +293,18 @@ export default function Chatbot() {
                 <div className="mb-4">
                   <Card className="max-w-md">
                     <CardContent className="p-4">
-                      {currentAnswer && (
+                      {currentAnswer ? (
                         <div className="text-gray-800 whitespace-pre-wrap break-words mb-3">
                           {currentAnswer}<span className="animate-pulse">|</span>
                         </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-gray-600 mb-3">
+                          <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                          <span className="text-sm">Aguardando resposta...</span>
+                        </div>
                       )}
                       
-                      {currentReasoning.length > 0 && (
+                      {currentReasoning.length > 0 ? (
                         <div className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
                           <div className="flex items-center gap-1 mb-1">
                             <Brain className="w-3 h-3 animate-pulse" />
@@ -308,6 +313,11 @@ export default function Chatbot() {
                           <div className="font-mono">
                             {currentReasoning[currentReasoning.length - 1]}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded flex items-center gap-1">
+                          <Brain className="w-3 h-3 animate-pulse" />
+                          <span>Iniciando análise...</span>
                         </div>
                       )}
                     </CardContent>
