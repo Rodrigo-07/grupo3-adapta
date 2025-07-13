@@ -20,6 +20,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react";
+import Chatbot from "@/components/ui/chatbot";
 
 // ✅ Shared video/shorts wrapper
 function VideoArea({ children }: { children: React.ReactNode }) {
@@ -344,6 +345,9 @@ export default function CoursePlayer() {
           </Card>
         </div>
       </div>
+
+      {/* Chatbot Widget */}
+      <Chatbot />
     </div>
   );
 }
