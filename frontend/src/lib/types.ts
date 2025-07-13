@@ -2,7 +2,7 @@ export interface Course {
   id: string;
   name: string;
   description: string;
-  thumbnail?: string;
+  coverImage?: string;
 }
 
 export interface Class {
@@ -10,6 +10,5 @@ export interface Class {
   courseId: string;
   name: string;
   description: string;
-  videoUrl?: string;
-  resources?: string[];
+  video?: string;
 }

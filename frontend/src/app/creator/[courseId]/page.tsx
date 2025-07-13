@@ -3,6 +3,7 @@
 import { useLmsStore } from "@/store/lmsStore";
 import { useParams, useRouter } from "next/navigation";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -15,10 +16,16 @@ export default function ClassesList() {
   const courseId = params.courseId as string;
 
   const getCourseById = useLmsStore((state) => state.getCourseById);
-  const getClassesByCourse = useLmsStore((state) => state.getClassesByCourse);
+  const classes = useLmsStore((state) => state.getClassesByCourse(courseId));
+  const fetchClasses = useLmsStore((state) => state.fetchClasses);
   const course = getCourseById(courseId);
-  const classes = getClassesByCourse(courseId);
+  console.log('[CreatorCoursePage] courseId:', courseId, 'classes:', classes);
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    console.log('[CreatorCoursePage] Fetching classes for courseId:', courseId);
+    fetchClasses(courseId);
+  }, [fetchClasses, courseId]);
 
   if (!hasMounted) {
     return (

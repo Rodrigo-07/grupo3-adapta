@@ -60,12 +60,14 @@ async def create_lesson(
     title: str,
     description: Optional[str] = None,
     video: Optional[str] = None,
+    video_transcript: Optional[str] = None,
 ) -> Lesson:
     lesson = Lesson(
         course_id=course_id,
         title=title,
         description=description,
         video=video,
+        video_transcript=video_transcript
     )
     session.add(lesson)
     await session.commit()

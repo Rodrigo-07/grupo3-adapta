@@ -1,22 +1,25 @@
 import os
-from sqlalchemy import select as sa_select 
 import uuid
-from pathlib import Path
-from typing import AsyncIterator, List, Optional, Tuple
 import mimetypes
 import re
+from pathlib import Path
+from typing import AsyncIterator, List, Optional, Tuple
 
 import aiofiles
 from fastapi import UploadFile, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
+from sqlalchemy import select as sa_select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.file import File
-
 from services.course_manager import save_file_db
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "uploads")).resolve()
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+
+# Regex for Range header
+RANGE_RE = re.compile(r"bytes=(\d+)-(\d+)?")
+DEFAULT_CHUNK = 512 * 1024  # 512 KB
 
 
 def _safe_name(name: str) -> str:
@@ -45,15 +48,14 @@ async def store_upload(
             await out.write(chunk)
     await upload.close()
 
-    # DB row
     file = await save_file_db(
         session,
         name=upload.filename,
         path=str(dest),
         mime=upload.content_type or "application/octet-stream",
         course_id=course_id,
-        lesson_id=lesson_id if lesson_id is not None else None,
-        category=category
+        lesson_id=lesson_id,
+        category=category,
     )
     return file
 
@@ -72,15 +74,12 @@ def get_file_response(file: File, *, as_download: bool = True) -> FileResponse:
 RANGE_RE = re.compile(r"bytes=(\\d+)-(\\d+)?")
 DEFAULT_CHUNK = 256 * 1024  # 256KB
 
-
-
 def _parse_range(hdr: Optional[str], file_size: int) -> Tuple[int, int]:
-    """Converte 'bytes=a-b' em (start, end_inclusive)."""
     if hdr is None:
         return 0, file_size - 1
 
     m = RANGE_RE.match(hdr)
-    if not m:  # formato inválido
+    if not m:
         raise HTTPException(416, detail="Invalid Range header")
 
     start = int(m.group(1))
@@ -98,15 +97,6 @@ async def stream_file(
 ) -> StreamingResponse:
     """
     Devolve um StreamingResponse com suporte a Range (vídeo, PDF, etc.).
-
-    Parameters
-    ----------
-    path : str | Path
-        Caminho absoluto do arquivo.
-    range_header : str | None
-        Cabeçalho `Range` recebido do cliente (ex.: 'bytes=1000-').
-    chunk_size : int
-        Tamanho de cada bloco lido (bytes).
     """
     p = Path(path)
     if not p.exists():
@@ -127,15 +117,18 @@ async def stream_file(
                 bytes_left -= len(chunk)
                 yield chunk
 
-    # tenta adivinhar o MIME; fallback genérico
     mime, _ = mimetypes.guess_type(p.name)
-    mime = mime or "application/octet-stream"
+    if not mime:
+        print(f"⚠️ MIME not detected for {p.name}, defaulting to video/mp4")
+    mime = mime or "video/mp4"
 
     headers = {
         "Accept-Ranges": "bytes",
         "Content-Length": str(length),
-        "Content-Range": f"bytes {start}-{end}/{file_size}",
     }
+    if range_header:
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+
     status_code = 206 if range_header else 200
     return StreamingResponse(
         _iter(),
@@ -149,8 +142,8 @@ def delete_physical_file(file: File) -> None:
     p = Path(file.path)
     if p.exists():
         p.unlink()
-        
-        
+
+
 async def list_files_by_course_or_lesson(
     session: AsyncSession,
     *,
@@ -158,7 +151,6 @@ async def list_files_by_course_or_lesson(
     lesson_id: Optional[int] = None,
     category: Optional[str] = None,
 ) -> list[File]:
-
     stmt = sa_select(File).where(File.course_id == course_id)
 
     if lesson_id is not None:

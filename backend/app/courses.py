@@ -1,4 +1,5 @@
-from typing import List, Optional
+import os
+from typing import List, Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Query
 from pydantic import BaseModel, Field, constr
@@ -16,9 +17,11 @@ from services.schemas import CourseCreate, CourseOut
 import json
 from typing import List, Dict, Any, Optional
 
-from services.course_manager import create_course, create_lesson, get_course, get_lesson, list_lessons_by_course
+from services.course_manager import create_course, create_lesson, get_course, get_lesson, list_lessons_by_course, save_file_db
 from services.file_manager import store_upload
 from services.schemas import CourseCreate, CourseOut, LessonIn, LessonOut
+
+from app.shorts_module.services import process_local_video
 
 async def get_db() -> AsyncSession:  # pragma: no cover
     async with SessionLocal() as session:
@@ -57,11 +60,16 @@ async def create_lesson_with_upload(
     title: str = Form(..., min_length=1),
     description: Optional[str] = Form(None, max_length=1000),
     video: UploadFile = File(..., description="Arquivo de vídeo principal"),
-    attachments: Optional[List[UploadFile]] = File(None),
+    attachments: Annotated[List[Any], File()] = [],
     db: AsyncSession = Depends(get_db),
 ):
     if await get_course(db, course_id) is None:
         raise HTTPException(status_code=404, detail="Course not found")
+    
+    safe_attachments = [
+        f for f in (attachments or [])
+        if isinstance(f, UploadFile) and f.filename
+    ]
 
     lesson = await create_lesson(
         db,
@@ -72,13 +80,28 @@ async def create_lesson_with_upload(
     )
 
     stored_video = await store_upload(db, video, course_id, lesson.id)
+    
+    results, transcript_segments, path_names = process_local_video(stored_video.path, course_id=course_id, lesson_id=lesson.id)
+    
+    transcript_text = "\n".join([seg.text for seg in transcript_segments])
+    lesson.video_transcript = transcript_text
     lesson.video = stored_video.path
     await db.commit()
-
-    for file_up in attachments or []:
-        if not file_up.filename:      # ignora strings vazias
-            continue
+    
+    
+    for file_up in safe_attachments:
         await store_upload(db, file_up, course_id, lesson.id)
+        
+    for path in path_names:
+        await save_file_db(
+            db,
+            name=os.path.basename(path),
+            path=path,
+            mime="video/mp4",
+            course_id=course_id,
+            lesson_id=lesson.id,
+            category="shorts"
+        )
 
     return lesson
 
@@ -148,6 +171,17 @@ async def create_many_lessons_upload(
         created_lessons.append(lesson_obj)
 
     return created_lessons
+
+
+@router.get("/", response_model=List[CourseOut])
+async def list_courses_endpoint(
+    db: AsyncSession = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+):
+    from services.course_manager import list_courses
+    courses = await list_courses(db, offset=offset, limit=limit)
+    return courses
 
 
 @router.get("/{course_id}", response_model=CourseOut)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CourseCard } from "@/components/CourseCard";
 import { Input } from "@/components/ui/input";
 import { useLmsStore } from "@/store/lmsStore";
@@ -10,8 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function UserDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { courses, getClassesByCourse } = useLmsStore();
+  const { courses, getClassesByCourse, fetchCourses } = useLmsStore();
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const filteredCourses = useMemo(() => {
     if (!searchTerm) return courses;
@@ -21,6 +25,8 @@ export default function UserDashboard() {
         course.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [courses, searchTerm]);
+
+  const uniqueFilteredCourses = useMemo(() => Array.from(new Map(filteredCourses.map(c => [c.id, c])).values()), [filteredCourses]);
 
   if (!hasMounted) {
     return (
@@ -58,9 +64,9 @@ export default function UserDashboard() {
         />
       </div>
 
-      {filteredCourses.length > 0 ? (
+      {uniqueFilteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredCourses.map((course) => (
+          {uniqueFilteredCourses.map((course) => (
             <CourseCard
               key={course.id}
               course={course}
