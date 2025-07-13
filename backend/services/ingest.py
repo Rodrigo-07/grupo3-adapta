@@ -10,7 +10,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 TEXT_SPLITTER = RecursiveCharacterTextSplitter(
     chunk_size=800, chunk_overlap=120
 )
-CHROMA_CLIENT = chromadb.PersistentClient(path="data")
+CHROMA_CLIENT = chromadb.PersistentClient(path="data/chroma")
 
 from services.embed import embed_batch
 
