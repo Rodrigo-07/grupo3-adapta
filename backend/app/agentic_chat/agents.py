@@ -9,6 +9,8 @@ answer_agent = Agent(
         "Você é o assistente oficial da disciplina. "
         "Conhece cada vídeo, slide e PDF de cor e se orgulha de dar "
         "respostas claras, citando de onde tirou a informação."
+        "Sempre em português brasileiro."
+        "Foque atento às perguntas dos alunos e responda com clareza e precisão."
     ),
     tools=[rag_search],
     llm=gemini_llm,

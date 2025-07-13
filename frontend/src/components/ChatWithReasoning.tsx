@@ -12,8 +12,6 @@ export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentReasoning, setCurrentReasoning] = useState<string[]>([]);
-  const [currentAnswer, setCurrentAnswer] = useState<string>("");
   const [showReasoning, setShowReasoning] = useState<Record<string, boolean>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -25,8 +23,6 @@ export default function Chatbot() {
     if (!input.trim()) return;
     const question = input.trim();
     setInput("");
-    setCurrentAnswer("");
-    setCurrentReasoning([]);
     setIsLoading(true);
 
     try {
@@ -37,62 +33,30 @@ export default function Chatbot() {
         body: JSON.stringify({ user_id: 1, message: question }),
       });
 
-      if (!res.body) throw new Error("Resposta sem corpo");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let idx;
-        while ((idx = buffer.indexOf("\n\n")) !== -1) {
-          const chunk = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 2);
-          handleChunk(chunk);
-        }
+      if (!res.ok) {
+        throw new Error(`Erro HTTP: ${res.status}`);
       }
 
-      if (buffer.trim()) handleChunk(buffer);
+      const data = await res.json();
+      
+      const msg: Message = {
+        id: crypto.randomUUID(),
+        text: data.answer || "Resposta não disponível",
+        reasoning: data.reasoning || []
+      };
+      
+      setMessages(prev => [...prev, msg]);
+
     } catch (err) {
       console.error("Erro:", err);
+      const errorMsg: Message = {
+        id: crypto.randomUUID(),
+        text: "Erro ao processar sua pergunta. Tente novamente.",
+        reasoning: []
+      };
+      setMessages(prev => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleChunk = (chunk: string) => {
-    const trimmed = chunk.trim();
-    if (!trimmed) return;
-
-    const payload = trimmed.replace(/^data:\s*/, "");
-
-    try {
-      const data = JSON.parse(payload);
-
-      switch (data.type) {
-        case "answer_chunk":
-          setCurrentAnswer(prev => prev + (data.chunk || ""));
-          break;
-        case "reasoning_step":
-          setCurrentReasoning(prev => [...prev, data.message]);
-          break;
-        case "done":
-          const msg: Message = {
-            id: crypto.randomUUID(),
-            text: currentAnswer,
-            reasoning: currentReasoning
-          };
-          setMessages(prev => [...prev, msg]);
-          setCurrentAnswer("");
-          setCurrentReasoning([]);
-          break;
-      }
-    } catch (e) {
-      console.warn("Erro ao parsear:", e);
     }
   };
 

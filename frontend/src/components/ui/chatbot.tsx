@@ -117,41 +117,31 @@ export default function Chatbot() {
       setCurrentSummary("");
       setCurrentInsight(null);
 
-      const res = await fetch("http://localhost:8000/chat/1/chat/stream", {
+      const res = await fetch("http://localhost:8000/chat/1/chat", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Accept": "text/event-stream"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ user_id: 1, message: text }),
       });
       
-      if (!res.body) throw new Error("empty body");
-      
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData = JSON.parse(line.slice(6));
-              handleStreamEvent(eventData);
-            } catch (e) {
-              console.warn('Erro ao parsear evento:', line, e);
-            }
-          }
-        }
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
+      
+      const data = await res.json();
+      
+      // Create complete message from response
+      addMessage({
+        id: crypto.randomUUID(),
+        role: "bot",
+        text: data.answer || "Resposta não disponível",
+        reasoning: data.reasoning || [],
+        insight: data.insight,
+        summary: data.summary,
+        showReasoning: false
+      });
+      
     } catch (e) {
       console.error(e);
       addMessage({ 
@@ -159,6 +149,7 @@ export default function Chatbot() {
         role: "system", 
         text: "⚠️ Erro ao obter resposta." 
       });
+    } finally {
       setIsLoading(false);
     }
   };
