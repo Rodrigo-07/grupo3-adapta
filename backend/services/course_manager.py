@@ -116,6 +116,7 @@ async def save_file_db(
     mime: str,
     course_id: int | None = None,
     lesson_id: int | None = None,
+    category: Optional[str] = None,
 ) -> File:
     file = File(
         name=name,
@@ -123,6 +124,7 @@ async def save_file_db(
         mime=mime,
         course_id=course_id,
         lesson_id=lesson_id,
+        category=category,
     )
     session.add(file)
     await session.commit()
