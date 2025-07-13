@@ -108,7 +108,7 @@ export default function Chatbot() {
       case "user":
         return (
           <div key={message.id} className="flex justify-end mb-4">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-2xl rounded-br-md max-w-xs shadow-md">
+            <div className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white p-4 rounded-2xl rounded-br-md max-w-xs shadow-md">
               <p className="text-sm leading-relaxed">{message.text}</p>
             </div>
           </div>
@@ -124,12 +124,12 @@ export default function Chatbot() {
                 </div>
                 
                 {message.summary && (
-                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                  <div className="mb-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
                     <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-800">Resumo</span>
+                      <MessageSquare className="w-4 h-4 text-[#3fc0b1]" />
+                      <span className="text-sm font-semibold text-teal-800">Resumo</span>
                     </div>
-                    <p className="text-sm text-blue-700 leading-relaxed">{message.summary}</p>
+                    <p className="text-sm text-teal-700 leading-relaxed">{message.summary}</p>
                   </div>
                 )}
                 
@@ -154,7 +154,7 @@ export default function Chatbot() {
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleReasoning(message.id)}
-                      className="w-full justify-between text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-xl transition-colors"
+                      className="w-full justify-between text-xs text-gray-600 hover:text-gray-800 hover:bg-teal-50 rounded-xl transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <Brain className="w-4 h-4" />
@@ -208,56 +208,70 @@ export default function Chatbot() {
             onClick={() => setIsOpen(false)}
           />
         )}
-      </AnimatePresence>
+      </AnimatePresence>  
 
-      {/* Botão flutuante para abrir o chat quando fechado */}
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            className="fixed bottom-6 right-6 z-50"
-          >
-            <Button
-              onClick={() => setIsOpen(true)}
-              className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:scale-110"
+      {/* Aba pequena na parte inferior */}
+      <div className="fixed bottom-0 right-6 z-50">
+        {/* Aba recolhida */}
+        <AnimatePresence>
+          {!isOpen && (
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white shadow-lg rounded-t-xl overflow-hidden"
             >
-              <MessageSquare className="w-6 h-6" />
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <button
+                onClick={() => setIsOpen(true)}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-black/10 transition-all duration-200 hover:scale-105"
+              >
+                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                  💬
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold text-sm">Chat IA</div>
+                  <div className="text-teal-100 text-xs">Clique para conversar</div>
+                </div>
+                <ChevronUp className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Painel do chat */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-96 z-50"
-          >
-            <div className="h-full bg-white shadow-2xl flex flex-col border-l border-gray-200">
+        {/* Painel do chat expandido */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ y: "100%", opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: "100%", opacity: 0, scale: 0.95 }}
+              transition={{ 
+                type: "spring", 
+                damping: 20, 
+                stiffness: 300,
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 }
+              }}
+              className="bg-white shadow-2xl rounded-t-xl w-96 h-[500px] flex flex-col border border-gray-200 mb-0"
+            >
               {/* Header do chat */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <div className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white p-3 flex items-center justify-between rounded-t-xl">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
                     💬
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Assistente IA</h3>
-                    <p className="text-blue-100 text-xs">Sempre pronto para ajudar</p>
+                    <h3 className="font-semibold text-base">Assistente IA</h3>
+                    <p className="text-teal-100 text-xs">Sempre pronto para ajudar</p>
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsOpen(false)}
-                  className="text-white hover:bg-white/20 rounded-full w-8 h-8 p-0"
+                  className="text-white hover:bg-white/20 rounded-full w-7 h-7 p-0 transition-all duration-200 hover:scale-110"
                 >
-                  <X className="w-4 h-4" />
+                  <ChevronDown className="w-4 h-4" />
                 </Button>
               </div>
               
@@ -265,8 +279,8 @@ export default function Chatbot() {
               <div className="flex-1 overflow-y-auto p-4 bg-gray-50/30">
                 {messages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                      <Brain className="w-8 h-8 text-blue-600" />
+                    <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4">
+                      <Brain className="w-8 h-8 text-[#3fc0b1]" />
                     </div>
                     <h4 className="text-gray-700 font-medium mb-2">Como posso ajudar?</h4>
                     <p className="text-gray-500 text-sm">Faça uma pergunta sobre seus estudos</p>
@@ -282,11 +296,11 @@ export default function Chatbot() {
                       <div className="p-5">
                         {currentAnswer ? (
                           <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
-                            {currentAnswer}<span className="animate-pulse text-blue-500">|</span>
+                            {currentAnswer}<span className="animate-pulse text-[#3fc0b1]">|</span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-3 text-gray-600 mb-4">
-                            <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                            <div className="animate-spin w-5 h-5 border-2 border-[#3fc0b1] border-t-transparent rounded-full"></div>
                             <span className="text-sm">Pensando...</span>
                           </div>
                         )}
@@ -323,13 +337,13 @@ export default function Chatbot() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={keyHandler}
                     placeholder="Digite sua mensagem…"
-                    className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50"
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3fc0b1] focus:border-transparent transition-all duration-200 bg-gray-50/50"
                     disabled={isLoading}
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={isLoading || !input.trim()}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl px-6 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] hover:from-[#35a89a] hover:to-[#2d9082] text-white rounded-xl px-6 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
@@ -339,10 +353,10 @@ export default function Chatbot() {
                   </Button>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </>
   );
 }
