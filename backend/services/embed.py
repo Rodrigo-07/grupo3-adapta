@@ -2,6 +2,17 @@ import os
 from typing import List
 
 from google import genai
+from langchain.vectorstores import Chroma
+
+import asyncio, random
+from tenacity import retry, wait_random_exponential, stop_after_attempt, retry_if_exception_type
+from google.genai import errors as gerrors
+
+from langchain_core.embeddings import Embeddings
+
+import time
+
+from services.ingest import CHROMA_CLIENT
 
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
@@ -13,22 +24,49 @@ _MODEL_NAME = "gemini-embedding-exp-03-07"
 _MAX_BATCH = 100
 
 
-def embed_batch(texts: List[str]) -> List[List[float]]:
-    """
-    Gera embeddings em lotes de ≤100 itens, extraindo só os vetores .values.
-    Retorna [[float, …], …] — exatamente o formato que o Chroma aceita.
-    """
-    out: List[List[float]] = []
+_MAX_BATCH = 32
+_MIN_DELAY = 2.5
+_JITTER    = 1.0
 
+@retry(
+    retry=retry_if_exception_type(gerrors.ClientError),
+    wait=wait_random_exponential(multiplier=2, max=60),
+    stop=stop_after_attempt(6),
+)
+def _gemini_call(chunk):
+    return client.models.embed_content(
+        model=_MODEL_NAME,
+        contents=chunk,
+    )
+
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    vecs: list[list[float]] = []
     for i in range(0, len(texts), _MAX_BATCH):
-        chunk = texts[i : i + _MAX_BATCH]
+        part = texts[i : i + _MAX_BATCH]
 
-        resp = client.models.embed_content(
-            model=_MODEL_NAME,
-            contents=chunk,
-        )
+        resp = _gemini_call(part)          # sync
+        vecs.extend([e.values for e in resp.embeddings])
 
-        # resp.embeddings é uma lista de ContentEmbedding
-        out.extend([e.values for e in resp.embeddings])
+        time.sleep(_MIN_DELAY + random.random() * _JITTER)  # sync sleep
+    return vecs
 
-    return out
+class GeminiEmbeddings(Embeddings):
+    def embed_documents(self, texts):
+        return embed_batch(texts)
+    def embed_query(self, text):
+        return embed_batch([text])[0]
+
+
+_EMBED = GeminiEmbeddings()
+
+def get_retriever(k: int = 8):
+    """
+    Configura um retriever para buscar trechos relevantes usando Gemini embeddings.
+    """
+    vectorstore = Chroma(
+        collection_name="global_collection",
+        embedding_function=_EMBED,
+        client=CHROMA_CLIENT,
+    )
+    retriever = vectorstore.as_retriever(search_kwargs={"k": k})
+    return retriever
