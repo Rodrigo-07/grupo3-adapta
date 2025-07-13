@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Query
 from pydantic import BaseModel, Field, constr
@@ -32,8 +32,19 @@ router = APIRouter(prefix="/courses", tags=["Courses & Lessons"])
 # ---------------------------------------------------------------------------
 
 @router.post("/", response_model=CourseOut, status_code=status.HTTP_201_CREATED)
-async def create_course_endpoint(course_in: CourseCreate, db: AsyncSession = Depends(get_db)):
-    course = await create_course(db, title=course_in.title, description=course_in.description)
+async def create_course_endpoint(
+    title: str = Form(..., min_length=1),
+    description: Optional[str] = Form(None, max_length=1000),
+    cover_image: UploadFile = File(..., description="Cover image for the course"),
+    db: AsyncSession = Depends(get_db),
+):
+    course = await create_course(db, title=title, description=description)
+
+    # Salvar imagem de capa
+    stored_image = await store_upload(db, cover_image, course_id=course.id)
+    course.cover_image_path = stored_image.path
+    await db.commit()
+
     return course
 
 @router.post(
@@ -46,13 +57,16 @@ async def create_lesson_with_upload(
     title: str = Form(..., min_length=1),
     description: Optional[str] = Form(None, max_length=1000),
     video: UploadFile = File(..., description="Arquivo de vídeo principal"),
-    attachments: List[UploadFile] = File(
-        [], description="Arquivos extras (PDF, ZIP, etc.)"
-    ),
+    attachments: Annotated[List[Any], File()] = [],
     db: AsyncSession = Depends(get_db),
 ):
     if await get_course(db, course_id) is None:
         raise HTTPException(status_code=404, detail="Course not found")
+    
+    safe_attachments = [
+        f for f in (attachments or [])
+        if isinstance(f, UploadFile) and f.filename
+    ]
 
     lesson = await create_lesson(
         db,
@@ -66,8 +80,8 @@ async def create_lesson_with_upload(
     lesson.video = stored_video.path
     await db.commit()
 
-    # 4) anexos
-    for file_up in attachments:
+    
+    for file_up in safe_attachments:
         await store_upload(db, file_up, course_id, lesson.id)
 
     return lesson

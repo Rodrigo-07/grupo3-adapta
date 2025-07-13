@@ -21,5 +21,7 @@ dependencies = [
   "python-multipart>=0.0.9",
   "google-genai",
   "python-dotenv>=1.0.1",
+  "faster-whisper>=1.1.1",
+  "ffmpeg>=1.4",
   "aiofiles"
 ]
