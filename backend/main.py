@@ -6,7 +6,8 @@ from app.users import router as users_router
 from app.payments import router as payments_router
 from app.contents import router as contents_router
 from app.courses import router as courses_router
-from app.shorts_module.routes import router as shorts_router
+from app.shorts_agent.routes import router as shorts_router
+from app.threads_agent.routes import router as threads_router
 from models.database import Base, engine
 from dotenv import load_dotenv
 
@@ -47,6 +48,7 @@ app.include_router(payments_router, prefix="/payments", tags=["Payments"])
 app.include_router(contents_router, prefix="/contents", tags=["Contents"])
 app.include_router(courses_router, prefix="/courses", tags=["Courses & Lessons"])
 app.include_router(shorts_router, prefix="/shorts")
+app.include_router(threads_router, prefix="/threads")
 
 @app.get("/")
 async def read_root():
