@@ -41,7 +41,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <div className="mr-4 flex items-center">
+        <div className="mr-4 w-20 flex items-center hover:scale-[1.05] transition-transform duration-500">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo.png" alt="Camufy Logo" width={28} height={28} className="rounded" />
             <span className="font-bold font-headline">Camufy</span>

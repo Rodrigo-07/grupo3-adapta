@@ -1,12 +1,12 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import React from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useLmsStore } from "@/store/lmsStore";
 import { useHasMounted } from "@/hooks/use-has-mounted";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle2 } from "lucide-react";
@@ -17,10 +17,18 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MessageCircle, Repeat2, Heart, Share2 } from "lucide-react";
+
+// ✅ Shared video/shorts wrapper
+function VideoArea({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-neutral-100 mt-6">
+      {children}
+    </div>
+  );
+}
 
 export default function CoursePlayer() {
   const params = useParams();
@@ -35,6 +43,12 @@ export default function CoursePlayer() {
   const [activeTab, setActiveTab] = useState("video");
   const [shorts, setShorts] = useState<string[]>([]);
   const [threadsMensages, setThreadsMessages] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRefs = useRef<HTMLVideoElement[]>([]);
+  const handleSlideChange = React.useCallback((index: number) => {
+    setActiveIndex(index);
+  }, []);
+
 
   useEffect(() => {
     fetchClasses(courseId);
@@ -51,7 +65,6 @@ export default function CoursePlayer() {
     return `http://localhost:8000/contents/media/${relPath}`;
   };
 
-  // Fetch shorts for specific course and lesson
   useEffect(() => {
     if (!courseId || !activeClass?.id || activeTab !== "shorts") return;
 
@@ -86,15 +99,13 @@ export default function CoursePlayer() {
           `http://localhost:8000/courses/courses/${courseId}/lessons/${activeClass.id}?with_files=false`
         );
         const data = await res.json();
-
         const threadMessages = data.thread?.messages || [];
         const cleanMsgs = threadMessages.map((m: { tweet: string }) =>
           m.tweet.slice(3).trim()
         );
         setThreadsMessages(cleanMsgs);
-        console.log("Thread messages:", cleanMsgs);
       } catch (err) {
-        console.error("Failed to fetchx threads:", err);
+        console.error("Failed to fetch threads:", err);
         setThreadsMessages([]);
       }
     };
@@ -102,7 +113,7 @@ export default function CoursePlayer() {
     fetchThreads();
   }, [courseId, activeClass?.id, activeTab]);
 
-  if (!hasMounted) return <CoursePlayerSkeleton />;
+  if (!hasMounted) return <div className="fixed inset-0 bg-white z-50"><CoursePlayerSkeleton /></div>;
   if (!course) return <div className="p-8 text-center">Course not found.</div>;
 
   return (
@@ -110,97 +121,117 @@ export default function CoursePlayer() {
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2 order-2 lg:order-1">
           <h1 className="text-3xl font-bold mb-2">{course.name}</h1>
-          <h2 className="text-xl text-muted-foreground font-semibold mb-4">
-            {activeClass?.name}
-          </h2>
 
-          <Tabs
-            defaultValue="video"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList>
-              <TabsTrigger value="video">Video</TabsTrigger>
-              <TabsTrigger value="shorts">Shorts</TabsTrigger>
-              <TabsTrigger value="thread">Thread</TabsTrigger>
-              <TabsTrigger value="ebook">Ebook</TabsTrigger>
-              <TabsTrigger value="podcast">Podcast</TabsTrigger>
-              <TabsTrigger value="quiz">Quiz</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {activeTab === "video" && (
-            <div className="mt-6">
-              {activeClass?.video ? (
-                <video
-                  src={getVideoUrl(activeClass.video)}
-                  controls
-                  className="w-full rounded-lg"
-                  style={{ maxHeight: 480 }}
-                />
-              ) : (
-                <div className="aspect-video w-full bg-slate-800 rounded-lg flex items-center justify-center text-slate-400">
-                  No video available for this class.
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "shorts" && (
-            <div className="mt-6 flex justify-center">
-              <Carousel className="w-full max-w-2xl">
-                <CarouselContent>
-                  {shorts.length > 0 ? (
-                    shorts.map((url, i) => (
-                      <CarouselItem
-                        key={i}
-                        className="flex items-center justify-center"
-                      >
-                        <video
-                          src={url}
-                          controls
-                          className="w-full h-auto rounded-2xl"
-                          style={{ maxHeight: 400 }}
-                        />
-                      </CarouselItem>
-                    ))
-                  ) : (
-                    <CarouselItem>
-                      <div className="aspect-video w-full bg-gray-300 dark:bg-gray-700 rounded-2xl flex items-center justify-center text-gray-500">
-                        No shorts found.
-                      </div>
-                    </CarouselItem>
-                  )}
-                </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
-              </Carousel>
-            </div>
-          )}
-
+          {/* ✅ Title and Tabs side by side */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2 flex-wrap">
+            <h2 className="text-xl text-muted-foreground font-semibold">
+              {activeClass?.name}
+            </h2>
+            <Tabs defaultValue="video" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="flex flex-wrap justify-center mb-4 sm:justify-start">
+                <TabsTrigger value="video">Video</TabsTrigger>
+                <TabsTrigger value="shorts">Shorts</TabsTrigger>
+                <TabsTrigger value="thread">Thread</TabsTrigger>
+                <TabsTrigger value="progress">Podcast</TabsTrigger>
+                <TabsTrigger value="progress">Ebook</TabsTrigger>
+                
+              </TabsList>
+            </Tabs>
+          </div>
+          {/* PROGRESS */}
           <div className="my-6">
             <div className="flex justify-between items-center mb-2">
               <p className="text-sm text-muted-foreground">Your Progress</p>
               <p className="text-sm font-semibold">{progress}% Complete</p>
             </div>
-            <Progress value={progress} />
+            <Progress className="bg-gray-300" value={progress} />
           </div>
-            {activeTab === "thread" && (
+          
+          {/* VIDEO */}
+          {activeTab === "video" && (
+            <VideoArea>
+              {activeClass?.video ? (
+                <video
+                  src={getVideoUrl(activeClass.video)}
+                  controls
+                  className="absolute top-0 left-0 w-full h-full object-cover z-0"
+                />
+              ) : (
+                <div className="absolute top-0 left-0 w-full h-full bg-slate-800 flex items-center justify-center text-slate-400 z-0">
+                  No video available for this class.
+                </div>
+              )}
+            </VideoArea>
+          )}
+
+          {/* SHORTS */}
+          {activeTab === "shorts" && (
+            <div className="group relative w-full aspect-video rounded-lg overflow-hidden bg-neutral-100 mt-6">
+              <Carousel
+                className="w-full h-full relative z-10"
+                onSlideChange={handleSlideChange}
+              >
+                <CarouselContent className="z-0">
+                  {shorts.length > 0 ? (
+                    shorts.map((url, i) => (
+                      <CarouselItem key={i} className="flex justify-center items-center">
+                        <div className="relative w-full h-full z-0">
+                          <video
+                            ref={(el) => {
+                              if (el) videoRefs.current[i] = el;
+                            }}
+                            src={url}
+                            controls
+                            className="w-full h-full object-contain z-0"
+                          />
+                        </div>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <CarouselItem>
+                      <div className="w-full h-full flex items-center justify-center text-gray-500 z-0">
+                        No shorts found.
+                      </div>
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+
+                <CarouselPrevious className="hidden group-hover:flex absolute top-1/2 left-4 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full shadow-lg transition" />
+                <CarouselNext className="hidden group-hover:flex absolute top-1/2 right-4 -translate-y-1/2 z-20 bg-white/80 hover:bg-white rounded-full shadow-lg transition" />
+              </Carousel>
+            </div>
+          )}
+
+
+
+
+
+
+          {/* THREADS */}
+          {activeTab === "thread" && (
+            <div className="flex flex-col items-center w-full">
+              <div className="w-full max-w-2xl">
+                {/* ... thread content remains unchanged ... */}
+              </div>
+            </div>
+          )}
+
+          
+          {activeTab === "thread" && (
             <div className="flex flex-col items-center w-full">
               <div className="w-full max-w-2xl">
               {/* Main thread intro */}
               <Card className="rounded-xl mb-4 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-sm">
                 <CardHeader className="flex flex-row items-center gap-4 p-6 pb-2">
                 <Avatar className="h-14 w-14">
-                  <AvatarImage src="https://i.pravatar.cc/150?img=10" alt="Jane Doe" />
+                  <AvatarImage src="/ze.jpg" alt="Zé" />
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <div>
                   <div className="font-semibold leading-tight text-lg">
-                  Jane Doe <span className="text-yellow-400">◆</span>
+                  Zé <span className="text-yellow-400">◆</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">@janedoe · 2h</div>
+                  <div className="text-xs text-muted-foreground">@zealencar · 2h</div>
                 </div>
                 </CardHeader>
                 <CardContent className="p-6 pt-0 text-base">
@@ -238,7 +269,7 @@ export default function CoursePlayer() {
                   {/* Avatar aligned with line */}
                   <div className="flex flex-col items-center mr-4">
                     <Avatar className="h-12 w-12 z-10">
-                    <AvatarImage src="https://i.pravatar.cc/150?img=10" alt="Jane Doe" />
+                    <AvatarImage src="/ze.jpg" alt="Zé" />
                     <AvatarFallback>JD</AvatarFallback>
                     </Avatar>
                   </div>
@@ -247,9 +278,9 @@ export default function CoursePlayer() {
                     <CardHeader className="flex flex-row items-center gap-2 p-4 pb-2">
                       <div>
                       <div className="font-semibold leading-tight text-base">
-                        Jane Doe <span className="text-yellow-400">◆</span>
+                        Zé <span className="text-yellow-400">◆</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">@janedoe · 9h</div>
+                      <div className="text-xs text-muted-foreground">@zealencar · 1h</div>
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-base">{message}</CardContent>
@@ -277,17 +308,12 @@ export default function CoursePlayer() {
             </div>
             )}
 
-          {["ebook", "podcast", "quiz"].includes(activeTab) && (
-            <Card className="flex items-center justify-center p-10 rounded-2xl">
-              <p className="text-muted-foreground">Content for {activeTab} is coming soon!</p>
-            </Card>
-          )}
-
           {activeTab === "video" && (
             <p className="text-muted-foreground">{activeClass?.description}</p>
           )}
         </div>
 
+        {/* SIDEBAR */}
         <div className="lg:col-span-1 order-1 lg:order-2 mb-8 lg:mb-0">
           <Card className="rounded-2xl p-4 sticky top-20">
             <h3 className="font-bold text-lg mb-4 px-2">Course Classes</h3>
@@ -324,7 +350,7 @@ export default function CoursePlayer() {
 
 function CoursePlayerSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-[-4rem]" style={{ marginTop: '-64px' }}>
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-8">
         <div className="lg:col-span-2 order-2 lg:order-1">
           <Skeleton className="h-10 w-3/4 mb-2" />
