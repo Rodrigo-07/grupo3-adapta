@@ -23,7 +23,7 @@ export default function CreatorDashboard() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold font-headline">My Courses</h1>
+          <h1 className="text-3xl font-bold font-headline">Meus Cursos</h1>
           <Skeleton className="h-10 w-36" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -46,11 +46,11 @@ export default function CreatorDashboard() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold font-headline">My Courses</h1>
+        <h1 className="text-3xl font-bold font-headline">Meus Cursos</h1>
         <Button asChild>
           <Link href="/creator/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Course
+            Novo Curso
           </Link>
         </Button>
       </div>
@@ -67,12 +67,12 @@ export default function CreatorDashboard() {
         </div>
       ) : (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
-            <h2 className="text-xl font-semibold">No courses yet</h2>
-            <p className="text-muted-foreground mt-2 mb-4">Click "New Course" to get started.</p>
+            <h2 className="text-xl font-semibold">Nenhum curso ainda</h2>
+            <p className="text-muted-foreground mt-2 mb-4">Clique em "Novo Curso" para começar.</p>
             <Button asChild>
                 <Link href="/creator/new">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Create Your First Course
+                    Criar seu Primeiro Curso
                 </Link>
             </Button>
         </div>

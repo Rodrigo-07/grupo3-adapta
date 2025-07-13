@@ -18,9 +18,8 @@ export default function Home() {
         <h1 className="text-5xl font-bold font-headline tracking-tighter mb-4">
           Bem-vindo ao Camufy
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          O futuro do aprendizado, impulsionado por IA. Crie cursos envolventes
-          ou comece sua jornada de estudos agora mesmo.
+        <p className="text-xl  text-[#3fc0b1] max-w-2xl mx-auto">
+          Um curso, infinitos jeitos de aprender<br /> Seu curso, agora em shorts, threads, podcast — e muito mais.
         </p>
       </div>
 
