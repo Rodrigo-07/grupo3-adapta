@@ -2,7 +2,14 @@
 
 import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, Brain, MessageSquare, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Brain,
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,9 +23,6 @@ interface Message {
   showReasoning?: boolean;
 }
 
-/**
- * Chat widget with streamed reasoning and expandable thoughts.
- */
 export default function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -30,10 +34,9 @@ export default function Chatbot() {
   const [currentInsight, setCurrentInsight] = useState<any>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const scrollBottom = () =>
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-
-  useEffect(scrollBottom, [messages]);
+  }, [messages]);
 
   const addMessage = (m: Message) => setMessages((p) => [...p, m]);
 
@@ -52,18 +55,14 @@ export default function Chatbot() {
 
       const res = await fetch("http://localhost:8000/chat/1/chat", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: 1, message: text }),
       });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
+
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
       const data = await res.json();
-      
+
       addMessage({
         id: crypto.randomUUID(),
         role: "bot",
@@ -73,13 +72,13 @@ export default function Chatbot() {
         summary: data.summary,
         showReasoning: false
       });
-      
+
     } catch (e) {
       console.error(e);
-      addMessage({ 
-        id: crypto.randomUUID(), 
-        role: "system", 
-        text: "⚠️ Erro ao obter resposta." 
+      addMessage({
+        id: crypto.randomUUID(),
+        role: "system",
+        text: "⚠️ Erro ao obter resposta."
       });
     } finally {
       setIsLoading(false);
@@ -94,9 +93,9 @@ export default function Chatbot() {
   };
 
   const toggleReasoning = (messageId: string) => {
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === messageId 
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === messageId
           ? { ...msg, showReasoning: !msg.showReasoning }
           : msg
       )
@@ -113,7 +112,7 @@ export default function Chatbot() {
             </div>
           </div>
         );
-        
+
       case "bot":
         return (
           <div key={message.id} className="mb-6">
@@ -122,7 +121,7 @@ export default function Chatbot() {
                 <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
                   {message.text}
                 </div>
-                
+
                 {message.summary && (
                   <div className="mb-4 p-4 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-xl border border-teal-100">
                     <div className="flex items-center gap-2 mb-2">
@@ -132,22 +131,22 @@ export default function Chatbot() {
                     <p className="text-sm text-teal-700 leading-relaxed">{message.summary}</p>
                   </div>
                 )}
-                
+
                 {message.insight && (
                   <div className="mb-4 flex flex-wrap gap-2">
                     <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-200 rounded-full px-3 py-1">
                       {message.insight.tema}
                     </Badge>
-                    <Badge 
-                      variant={message.insight.dificuldade === 'alto' ? 'destructive' : 
-                              message.insight.dificuldade === 'medio' ? 'default' : 'secondary'}
+                    <Badge
+                      variant={message.insight.dificuldade === 'alto' ? 'destructive' :
+                        message.insight.dificuldade === 'medio' ? 'default' : 'secondary'}
                       className="rounded-full px-3 py-1"
                     >
                       {message.insight.dificuldade}
                     </Badge>
                   </div>
                 )}
-                
+
                 {message.reasoning && message.reasoning.length > 0 && (
                   <div className="mt-4">
                     <Button
@@ -162,7 +161,7 @@ export default function Chatbot() {
                       </div>
                       {message.showReasoning ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </Button>
-                    
+
                     {message.showReasoning && (
                       <div className="mt-3 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-100">
                         <div className="text-xs text-amber-800 space-y-2">
@@ -180,7 +179,7 @@ export default function Chatbot() {
             </div>
           </div>
         );
-        
+
       case "system":
         return (
           <div key={message.id} className="flex justify-center mb-3">
@@ -189,7 +188,7 @@ export default function Chatbot() {
             </div>
           </div>
         );
-        
+
       default:
         return null;
     }
@@ -197,7 +196,7 @@ export default function Chatbot() {
 
   return (
     <>
-      {/* Overlay de fundo quando o chat estiver aberto */}
+      {/* Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -208,155 +207,140 @@ export default function Chatbot() {
             onClick={() => setIsOpen(false)}
           />
         )}
-      </AnimatePresence>  
+      </AnimatePresence>
 
-      {/* Aba pequena na parte inferior */}
-      <div className="fixed bottom-0 right-6 z-50">
-        {/* Aba recolhida */}
+      {/* Botão recolhido lateral */}
+      <div className="fixed bottom-4 right-0 z-40">
         <AnimatePresence>
           {!isOpen && (
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white shadow-lg rounded-t-xl overflow-hidden"
+            <motion.button
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white px-4 py-3 rounded-l-xl shadow-lg flex items-center gap-2 hover:scale-105 transition-all"
+              onClick={() => setIsOpen(true)}
             >
-              <button
-                onClick={() => setIsOpen(true)}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-black/10 transition-all duration-200 hover:scale-105"
-              >
-                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                  💬
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-sm">Chat IA</div>
-                  <div className="text-teal-100 text-xs">Clique para conversar</div>
-                </div>
-                <ChevronUp className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Painel do chat expandido */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ y: "100%", opacity: 0, scale: 0.95 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: "100%", opacity: 0, scale: 0.95 }}
-              transition={{ 
-                type: "spring", 
-                damping: 20, 
-                stiffness: 300,
-                opacity: { duration: 0.2 },
-                scale: { duration: 0.2 }
-              }}
-              className="bg-white shadow-2xl rounded-t-xl w-96 h-[500px] flex flex-col border border-gray-200 mb-0"
-            >
-              {/* Header do chat */}
-              <div className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white p-3 flex items-center justify-between rounded-t-xl">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    💬
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-base">Assistente IA</h3>
-                    <p className="text-teal-100 text-xs">Sempre pronto para ajudar</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="text-white hover:bg-white/20 rounded-full w-7 h-7 p-0 transition-all duration-200 hover:scale-110"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              {/* Área de mensagens */}
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-50/30">
-                {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4">
-                      <Brain className="w-8 h-8 text-[#3fc0b1]" />
-                    </div>
-                    <h4 className="text-gray-700 font-medium mb-2">Como posso ajudar?</h4>
-                    <p className="text-gray-500 text-sm">Faça uma pergunta sobre seus estudos</p>
-                  </div>
-                )}
-                
-                {messages.map(renderMessage)}
-                
-                {/* Indicadores de carregamento */}
-                {isLoading && (
-                  <div className="mb-4">
-                    <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md shadow-sm max-w-md overflow-hidden">
-                      <div className="p-5">
-                        {currentAnswer ? (
-                          <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
-                            {currentAnswer}<span className="animate-pulse text-[#3fc0b1]">|</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 text-gray-600 mb-4">
-                            <div className="animate-spin w-5 h-5 border-2 border-[#3fc0b1] border-t-transparent rounded-full"></div>
-                            <span className="text-sm">Pensando...</span>
-                          </div>
-                        )}
-                        
-                        {currentReasoning.length > 0 ? (
-                          <div className="text-xs text-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-xl border border-amber-100">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Brain className="w-4 h-4 animate-pulse" />
-                              <span className="font-medium">Processando...</span>
-                            </div>
-                            <div className="font-mono bg-white/50 p-2 rounded-lg">
-                              {currentReasoning[currentReasoning.length - 1]}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-500 bg-gray-100 p-3 rounded-xl flex items-center gap-2">
-                            <Brain className="w-4 h-4 animate-pulse" />
-                            <span>Iniciando análise...</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={bottomRef} />
-              </div>
-
-              {/* Área de input */}
-              <div className="p-4 bg-white border-t border-gray-100">
-                <div className="flex gap-3">
-                  <input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={keyHandler}
-                    placeholder="Digite sua mensagem…"
-                    className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3fc0b1] focus:border-transparent transition-all duration-200 bg-gray-50/50"
-                    disabled={isLoading}
-                  />
-                  <Button
-                    onClick={sendMessage}
-                    disabled={isLoading || !input.trim()}
-                    className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] hover:from-[#35a89a] hover:to-[#2d9082] text-white rounded-xl px-6 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    ) : (
-                      "Enviar"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
+              💬 <ChevronLeft className="w-4 h-4" />
+            </motion.button>
           )}
         </AnimatePresence>
       </div>
+
+
+      {/* Painel lateral */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{
+              type: "spring",
+              damping: 20,
+              stiffness: 300,
+              opacity: { duration: 0.2 }
+            }}
+            className="fixed top-0 right-0 z-50 w-[380px] max-w-full h-full bg-white shadow-2xl border-l border-gray-200 flex flex-col"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] text-white p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+                  💬
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">Assistente IA</h3>
+                  <p className="text-teal-100 text-xs">Sempre pronto para ajudar</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                className="text-white hover:bg-white/20 rounded-full w-7 h-7 p-0 transition-all duration-200 hover:scale-110"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Mensagens */}
+            <div className="flex-1 overflow-y-auto p-4 bg-gray-50/30">
+              {messages.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mb-4">
+                    <Brain className="w-8 h-8 text-[#3fc0b1]" />
+                  </div>
+                  <h4 className="text-gray-700 font-medium mb-2">Como posso ajudar?</h4>
+                  <p className="text-gray-500 text-sm">Faça uma pergunta sobre seus estudos</p>
+                </div>
+              )}
+              {messages.map(renderMessage)}
+              {isLoading && (
+  <div className="mb-4">
+    <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-md shadow-sm max-w-md overflow-hidden">
+      <div className="p-5">
+        {currentAnswer ? (
+          <div className="text-gray-800 whitespace-pre-wrap break-words mb-4 leading-relaxed">
+            {currentAnswer}<span className="animate-pulse text-[#3fc0b1]">|</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 text-gray-600 mb-4">
+            <div className="animate-spin w-5 h-5 border-2 border-[#3fc0b1] border-t-transparent rounded-full"></div>
+            <span className="text-sm">Pensando...</span>
+          </div>
+        )}
+
+        {currentReasoning.length > 0 ? (
+          <div className="text-xs text-amber-700 bg-gradient-to-r from-amber-50 to-yellow-50 p-3 rounded-xl border border-amber-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Brain className="w-4 h-4 animate-pulse" />
+              <span className="font-medium">Processando...</span>
+            </div>
+            <div className="font-mono bg-white/50 p-2 rounded-lg">
+              {currentReasoning[currentReasoning.length - 1]}
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 bg-gray-100 p-3 rounded-xl flex items-center gap-2">
+            <Brain className="w-4 h-4 animate-pulse" />
+            <span>Iniciando análise...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+              <div ref={bottomRef} />
+            </div>
+
+            {/* Input */}
+            <div className="p-4 bg-white border-t border-gray-100">
+              <div className="flex gap-3">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={keyHandler}
+                  placeholder="Digite sua mensagem…"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3fc0b1] focus:border-transparent transition-all duration-200 bg-gray-50/50"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={isLoading || !input.trim()}
+                  className="bg-gradient-to-r from-[#3fc0b1] to-[#35a89a] hover:from-[#35a89a] hover:to-[#2d9082] text-white rounded-xl px-6 py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  ) : (
+                    "Enviar"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
