@@ -43,7 +43,7 @@ export default function Header() {
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/favicon.ico" alt="Camufy Logo" width={28} height={28} className="rounded" />
+            <Image src="/logo.png" alt="Camufy Logo" width={28} height={28} className="rounded" />
             <span className="font-bold font-headline">Camufy</span>
           </Link>
         </div>
