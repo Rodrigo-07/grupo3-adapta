@@ -7,11 +7,17 @@ import { useLmsStore } from "@/store/lmsStore";
 import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 
 export default function CreatorDashboard() {
   const courses = useLmsStore((state) => state.courses);
   const getClassesByCourse = useLmsStore((state) => state.getClassesByCourse);
+  const fetchCourses = useLmsStore((state) => state.fetchCourses);
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   if (!hasMounted) {
     return (

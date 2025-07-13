@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CourseCard } from "@/components/CourseCard";
 import { Input } from "@/components/ui/input";
 import { useLmsStore } from "@/store/lmsStore";
@@ -10,8 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function UserDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { courses, getClassesByCourse } = useLmsStore();
+  const { courses, getClassesByCourse, fetchCourses } = useLmsStore();
   const hasMounted = useHasMounted();
+
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
   const filteredCourses = useMemo(() => {
     if (!searchTerm) return courses;

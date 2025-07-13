@@ -154,6 +154,17 @@ async def create_many_lessons_upload(
     return created_lessons
 
 
+@router.get("/", response_model=List[CourseOut])
+async def list_courses_endpoint(
+    db: AsyncSession = Depends(get_db),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+):
+    from services.course_manager import list_courses
+    courses = await list_courses(db, offset=offset, limit=limit)
+    return courses
+
+
 @router.get("/{course_id}", response_model=CourseOut)
 async def get_course_endpoint(
     course_id: int,

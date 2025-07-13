@@ -11,17 +11,23 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, classCount, href }: CourseCardProps) {
+  // Transform the image path for public access
+  let imageUrl = course.coverImage || 'https://placehold.co/600x400.png';
+  if (course.coverImage && course.coverImage.startsWith('/app/uploads')) {
+    imageUrl = `http://localhost:8000${course.coverImage.replace('/app/uploads', '/uploads')}`;
+  }
   return (
     <Link href={href}>
       <Card className="h-full rounded-2xl shadow-md p-0 transition-transform hover:scale-[1.02] hover:shadow-lg">
         <CardHeader className="p-0">
           <Image
-            src={course.thumbnail || 'https://placehold.co/600x400.png'}
+            src={imageUrl}
             alt={course.name}
             width={600}
             height={400}
             className="rounded-t-2xl object-cover aspect-video"
             data-ai-hint="online course"
+            unoptimized
           />
         </CardHeader>
         <CardContent className="p-6">

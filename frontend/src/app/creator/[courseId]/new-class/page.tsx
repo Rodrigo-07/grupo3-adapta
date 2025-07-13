@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UploadPlaceholder } from "@/components/UploadPlaceholder";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(3, { message: "Class name must be at least 3 characters." }),
@@ -28,6 +29,8 @@ export default function NewClassForm() {
   const fetchClasses = useLmsStore((state) => state.fetchClasses);
   const course = getCourseById(courseId);
   const { toast } = useToast();
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,7 +41,20 @@ export default function NewClassForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const newClass = await addClass({ ...values, courseId });
+    if (!videoFile) {
+      toast({
+        title: "Video Required",
+        description: "Please upload a class video.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const formData = new FormData();
+    formData.append('title', values.name);
+    formData.append('description', values.description);
+    formData.append('video', videoFile);
+    attachments.forEach(file => formData.append('attachments', file));
+    const newClass = await addClass(formData, courseId);
     toast({
       title: newClass ? "Class Added!" : "Error",
       description: newClass ? `"${values.name}" has been added to the course.` : "Failed to add class. Please try again.",
@@ -90,13 +106,30 @@ export default function NewClassForm() {
                   </FormItem>
                 )}
               />
-              <div className="space-y-4">
-                <FormLabel>Uploads</FormLabel>
-                <div className="flex flex-wrap gap-4">
-                    <UploadPlaceholder label="Upload Video" />
-                    <UploadPlaceholder label="Add Extra Resources" />
-                </div>
-              </div>
+              <FormField
+                name="video"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Class Video</FormLabel>
+                    <FormControl>
+                      <Input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files?.[0] || null)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="attachments"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Attachments</FormLabel>
+                    <FormControl>
+                      <Input type="file" multiple onChange={e => setAttachments(Array.from(e.target.files || []))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit">Add Class</Button>
             </form>
           </Form>
