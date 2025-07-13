@@ -35,6 +35,7 @@ async def store_upload(
     upload: UploadFile,
     course_id: int,
     lesson_id: int | None = None,
+    category: Optional[str] = None,
 ) -> File:
     """Save UploadFile to disk *and* register in DB via save_file()."""
     dest = _build_dest(course_id, lesson_id, upload.filename)
@@ -51,6 +52,7 @@ async def store_upload(
         mime=upload.content_type or "application/octet-stream",
         course_id=course_id,
         lesson_id=lesson_id if lesson_id is not None else None,
+        category=category
     )
     return file
 
