@@ -1,7 +1,7 @@
 from typing import Iterable, Optional
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from models.course import Course
 from models.lesson import Lesson
@@ -20,21 +20,17 @@ async def create_course(
     await session.refresh(course)
     return course
 
-
-async def get_course(session: AsyncSession, course_id: int, *, with_lessons: bool = False) -> Optional[Course]:
+async def get_course(
+    session: AsyncSession,
+    course_id: int,
+    *,
+    with_lessons: bool = False,
+) -> Optional[Course]:
     stmt = select(Course).where(Course.id == course_id)
     if with_lessons:
-        stmt = stmt.options(joinedload(Course.classes))
+        stmt = stmt.options(selectinload(Course.lessons))
     result = await session.execute(stmt)
-    return result.scalar_one_or_none()
-
-
-async def get_course_by_title(session: AsyncSession, title: str) -> Optional[Course]:
-    result = await session.execute(
-        select(Course).where(Course.title.ilike(title))
-    )
-    return result.scalar_one_or_none()
-
+    return result.scalar_one_or_none() 
 
 async def list_courses(session: AsyncSession, *, offset: int = 0, limit: int = 100) -> Iterable[Course]:
     result = await session.execute(select(Course).offset(offset).limit(limit))
@@ -76,11 +72,15 @@ async def create_lesson(
     await session.refresh(lesson)
     return lesson
 
-
-async def get_lesson(session: AsyncSession, lesson_id: int, *, with_files: bool = False) -> Optional[Lesson]:
+async def get_lesson(
+    session: AsyncSession,
+    lesson_id: int,
+    *,
+    with_files: bool = False,
+) -> Optional[Lesson]:
     stmt = select(Lesson).where(Lesson.id == lesson_id)
     if with_files:
-        stmt = stmt.options(joinedload(Lesson.files))
+        stmt = stmt.options(selectinload(Lesson.files))
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -141,7 +141,7 @@ async def list_files_by_course(session: AsyncSession, course_id: int) -> Iterabl
 
 
 async def list_files_by_lesson(session: AsyncSession, lesson_id: int) -> Iterable[File]:
-    result = await session.execute(select(File).where(File.class_id == lesson_id))
+    result = await session.execute(select(File).where(File.lesson_id == lesson_id))
     return result.scalars().all()
 
 

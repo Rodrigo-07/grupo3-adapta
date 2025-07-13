@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, Form, File, UploadFile, Query
 from pydantic import BaseModel, Field, constr
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +16,7 @@ from services.schemas import CourseCreate, CourseOut
 import json
 from typing import List, Dict, Any, Optional
 
-from services.course_manager import create_course, create_lesson, get_course
+from services.course_manager import create_course, create_lesson, get_course, get_lesson, list_lessons_by_course
 from services.file_manager import store_upload
 from services.schemas import CourseCreate, CourseOut, LessonIn, LessonOut
 
@@ -138,3 +138,38 @@ async def create_many_lessons_upload(
         created_lessons.append(lesson_obj)
 
     return created_lessons
+
+
+@router.get("/{course_id}", response_model=CourseOut)
+async def get_course_endpoint(
+    course_id: int,
+    with_lessons: bool = Query(False, description="Incluir aulas no payload"),
+    db: AsyncSession = Depends(get_db),
+):
+    course = await get_course(db, course_id, with_lessons=with_lessons)
+    if course is None:
+        raise HTTPException(404, detail="Course not found")
+    return course
+
+
+@router.get("/{course_id}/lessons", response_model=List[LessonOut])
+async def list_lessons_endpoint(
+    course_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    if await get_course(db, course_id) is None:
+        raise HTTPException(404, detail="Course not found")
+    return await list_lessons_by_course(db, course_id)
+
+
+@router.get("/{course_id}/lessons/{lesson_id}", response_model=LessonOut)
+async def get_lesson_endpoint(
+    course_id: int,
+    lesson_id: int,
+    with_files: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+):
+    lesson = await get_lesson(db, lesson_id, with_files=with_files)
+    if lesson is None or lesson.course_id != course_id:
+        raise HTTPException(404, detail="Lesson not found in this course")
+    return lesson

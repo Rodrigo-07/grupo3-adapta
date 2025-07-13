@@ -1,13 +1,15 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Header
 from typing import List, Optional
+from pathlib import Path
+from services.file_manager import stream_file
 import asyncio
 
 from services.ingest import process_and_index
 
 router = APIRouter()
 
-@router.post("/{course_id}/materials", status_code=201)
-async def upload_materials(
+@router.post("/{course_id}/content", status_code=201)
+async def upload_contents(
     course_id: str,
     lecture_id: Optional[str] = Form(None),
     files: List[UploadFile] = File([]),
@@ -28,3 +30,11 @@ async def upload_materials(
 
     # 3) resposta só vem depois que tudo foi vetorizado
     return {"detail": "Vectorização concluída com sucesso"}
+
+@router.get("/media/{file_path:path}")
+async def serve_media(
+    file_path: str,
+    range: Optional[str] = Header(None),
+):
+    absolute_path = Path("uploads") / file_path
+    return await stream_file(absolute_path, range_header=range)

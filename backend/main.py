@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.users import router as users_router
 from app.payments import router as payments_router
-from app.materials import router as materials_router
+from app.contents import router as materials_router
 from app.courses import router as courses_router
 from models.database import Base, engine
 from dotenv import load_dotenv

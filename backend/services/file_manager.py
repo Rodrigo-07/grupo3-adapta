@@ -1,7 +1,9 @@
 import os
 import uuid
 from pathlib import Path
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Optional, Tuple
+import mimetypes
+import re
 
 import aiofiles
 from fastapi import UploadFile, HTTPException
@@ -64,17 +66,79 @@ def get_file_response(file: File, *, as_download: bool = True) -> FileResponse:
     )
 
 
-async def stream_file(path: str | Path, chunk: int = 8192) -> StreamingResponse:
+RANGE_RE = re.compile(r"bytes=(\\d+)-(\\d+)?")
+DEFAULT_CHUNK = 8 * 1024 * 1024  # 8 MB
+
+
+def _parse_range(hdr: Optional[str], file_size: int) -> Tuple[int, int]:
+    """Converte 'bytes=a-b' em (start, end_inclusive)."""
+    if hdr is None:
+        return 0, file_size - 1
+
+    m = RANGE_RE.match(hdr)
+    if not m:  # formato inválido
+        raise HTTPException(416, detail="Invalid Range header")
+
+    start = int(m.group(1))
+    end = int(m.group(2)) if m.group(2) else file_size - 1
+    if start >= file_size or end >= file_size or start > end:
+        raise HTTPException(416, detail="Requested Range Not Satisfiable")
+    return start, end
+
+
+async def stream_file(
+    path: str | Path,
+    *,
+    range_header: Optional[str] = None,
+    chunk_size: int = DEFAULT_CHUNK,
+) -> StreamingResponse:
+    """
+    Devolve um StreamingResponse com suporte a Range (vídeo, PDF, etc.).
+
+    Parameters
+    ----------
+    path : str | Path
+        Caminho absoluto do arquivo.
+    range_header : str | None
+        Cabeçalho `Range` recebido do cliente (ex.: 'bytes=1000-').
+    chunk_size : int
+        Tamanho de cada bloco lido (bytes).
+    """
     p = Path(path)
     if not p.exists():
         raise HTTPException(404, detail="Arquivo não encontrado")
 
+    file_size = p.stat().st_size
+    start, end = _parse_range(range_header, file_size)
+    length = end - start + 1
+
     async def _iter() -> AsyncIterator[bytes]:
         async with aiofiles.open(p, "rb") as f:
-            while data := await f.read(chunk):
-                yield data
+            await f.seek(start)
+            bytes_left = length
+            while bytes_left > 0:
+                chunk = await f.read(min(chunk_size, bytes_left))
+                if not chunk:
+                    break
+                bytes_left -= len(chunk)
+                yield chunk
 
-    return StreamingResponse(_iter(), media_type="application/octet-stream")
+    # tenta adivinhar o MIME; fallback genérico
+    mime, _ = mimetypes.guess_type(p.name)
+    mime = mime or "application/octet-stream"
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Length": str(length),
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
+    }
+    status_code = 206 if range_header else 200
+    return StreamingResponse(
+        _iter(),
+        status_code=status_code,
+        media_type=mime,
+        headers=headers,
+    )
 
 
 def delete_physical_file(file: File) -> None:
